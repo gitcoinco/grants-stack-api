@@ -1,0 +1,16 @@
+version: '3.9'
+
+services:
+  api:
+    build: .
+    env_file:
+      - .env
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d
+    depends_on:
+      - api
+    ports:
+      - 8080:8080
+
