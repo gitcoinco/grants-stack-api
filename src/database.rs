@@ -1,4 +1,4 @@
-use diesel::{PgConnection, RunQueryDsl};
+use diesel::{PgConnection, QueryDsl, RunQueryDsl};
 
 use crate::models::{Program, Project, Round, Vote};
 use crate::schema::programs::dsl::*;
@@ -6,6 +6,7 @@ use crate::schema::projects::dsl::*;
 use crate::schema::rounds::dsl::*;
 use crate::schema::votes::dsl::*;
 use crate::schema::{programs, projects, rounds, votes};
+use diesel::ExpressionMethods;
 
 pub fn new_program(conn: &mut PgConnection, data: Program) {
     let programs_data = vec![data];
@@ -137,4 +138,11 @@ pub async fn get_projects(conn: &mut PgConnection) -> Vec<Project> {
 
 pub async fn get_votes(conn: &mut PgConnection) -> Vec<Vote> {
     votes.load::<Vote>(conn).expect("Error loading votes")
+}
+
+pub async fn get_votes_of_project_id(conn: &mut PgConnection, project_id: &str) -> Vec<Vote> {
+    votes
+        .filter(projectId.eq(project_id))
+        .load::<Vote>(conn)
+        .expect("Error loading votes")
 }

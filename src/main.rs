@@ -1,5 +1,6 @@
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use grants_stack_api::{database, seed, utils};
+use serde::Deserialize;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -45,10 +46,20 @@ async fn get_projects_handler() -> impl Responder {
     HttpResponse::Ok().json(projects)
 }
 
+#[derive(Deserialize)]
+struct GetVotesQueryParams {
+    project_id: Option<String>,
+}
 // an endpoint for getting all votes
 #[get("/votes")]
-async fn get_votes_handler() -> impl Responder {
+async fn get_votes_handler(query: web::Query<GetVotesQueryParams>) -> impl Responder {
     let pg = &mut utils::establish_pg_connection().unwrap();
-    let votes = database::get_votes(pg).await;
-    HttpResponse::Ok().json(votes)
+    let project_id = query.project_id.clone();
+    if project_id.is_some() {
+        let votes = database::get_votes_of_project_id(pg, &project_id.unwrap()).await;
+        HttpResponse::Ok().json(votes)
+    } else {
+        let votes = database::get_votes(pg).await;
+        HttpResponse::Ok().json(votes)
+    }
 }

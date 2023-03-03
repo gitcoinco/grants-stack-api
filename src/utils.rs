@@ -1,4 +1,5 @@
 use std::env;
+use std::error::Error;
 
 use async_recursion::async_recursion;
 use diesel::{Connection, ConnectionResult, PgConnection};
@@ -8,6 +9,8 @@ use gql_client::Client;
 use crate::models::{
     Program, ProgramsQuery, Project, ProjectsQuery, Round, RoundsQuery, Vote, VotesQuery,
 };
+
+use reqwest::Error;
 
 
 pub const ETHEREUM_MAINNET: u16 = 1;
@@ -221,3 +224,15 @@ pub async fn r_query_votes(gql: &Client, last_id: &str) -> Vec<Vote> {
     votes
 }
 
+async fn fetch_from_ipfs(cid: &str) -> Result<String, Error> {
+    let react_app_pinata_gateway = "gitcoin.mypinata.cloud";
+    let url = format!("https://{}/ipfs/{}", react_app_pinata_gateway, cid);
+    let response = reqwest::get(&url).await?;
+
+    if response.status().is_success() {
+        let body = response.text().await?;
+        Ok(body)
+    } else {
+        Err(Error::from(response))
+    }
+}
