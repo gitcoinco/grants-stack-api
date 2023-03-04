@@ -35,8 +35,7 @@ async fn seed_projects(gql: &Client, conn: &mut PgConnection, chain_id: u16) {
 async fn seed_votes(gql: &Client, conn: &mut PgConnection, chain_id: u16) {
     let res = utils::r_query_votes(gql, "").await;
     let res = utils::add_vote_chain_id(res, chain_id).await;
+    let res = utils::backfill_project_id(res).await;
 
     database::new_votes(conn, res);
 }
-
-

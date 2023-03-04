@@ -24,9 +24,9 @@ pub struct ProgramsQuery {
 #[diesel(table_name = projects)]
 pub struct Project {
     pub id: String,
-    pub status: String, 
+    pub status: String,
     pub payoutAddress: Option<String>,
-    pub project: String, 
+    pub project: String,
     pub createdAt: String,
     pub updatedAt: String,
     pub chainId: Option<String>,
@@ -42,12 +42,12 @@ pub struct ProjectsQuery {
 #[diesel(table_name = rounds)]
 pub struct Round {
     pub id: String,
-    pub payoutStrategy: String, 
-    pub token: String, 
-    pub roundStartTime: String, 
-    pub roundEndTime: String, 
+    pub payoutStrategy: String,
+    pub token: String,
+    pub roundStartTime: String,
+    pub roundEndTime: String,
     pub applicationsStartTime: String,
-    pub applicationsEndTime: String, 
+    pub applicationsEndTime: String,
     pub createdAt: String,
     pub updatedAt: String,
     pub chainId: Option<String>,

@@ -1,17 +1,10 @@
-use std::env;
-use std::error::Error;
-
 use async_recursion::async_recursion;
 use diesel::{Connection, ConnectionResult, PgConnection};
-use dotenv::dotenv;
 use gql_client::Client;
 
 use crate::models::{
     Program, ProgramsQuery, Project, ProjectsQuery, Round, RoundsQuery, Vote, VotesQuery,
 };
-
-use reqwest::Error;
-
 
 pub const ETHEREUM_MAINNET: u16 = 1;
 pub const ETHEREUM_GOERLI: u16 = 5;
@@ -19,12 +12,13 @@ pub const OPTIMISM_MAINNET: u16 = 10;
 pub const FANTOM_MAINNET: u16 = 250;
 pub const FANTOM_TESTNET: u16 = 4002;
 
+// Establish the connection with the Postgres database
 pub fn establish_pg_connection() -> ConnectionResult<PgConnection> {
-    dotenv().ok();
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let database_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL must be set");
     PgConnection::establish(&database_url)
 }
 
+// Check if the chain id is valid
 pub fn check_chain_id(chain_id: u16) -> bool {
     chain_id == ETHEREUM_MAINNET
         || chain_id == ETHEREUM_GOERLI
@@ -33,6 +27,7 @@ pub fn check_chain_id(chain_id: u16) -> bool {
         || chain_id == FANTOM_TESTNET
 }
 
+// Establish the GraphQL client for the chain_id
 pub fn establish_gql_client(chain_id: u16) -> Client {
     let gql_url: String = match chain_id {
         ETHEREUM_MAINNET => dotenv::var("SUBGRAPH_ETHEREUM_MAINNET_API")
@@ -51,6 +46,8 @@ pub fn establish_gql_client(chain_id: u16) -> Client {
     Client::new(gql_url)
 }
 
+// add_*_chain_id is meant to retoractively add the chain ID of the data
+// TODO: See about a generic funtion to avoid duplicated code
 pub async fn add_program_chain_id(data: Vec<Program>, chain_id: u16) -> Vec<Program> {
     data.iter()
         .map(|item| {
@@ -60,7 +57,6 @@ pub async fn add_program_chain_id(data: Vec<Program>, chain_id: u16) -> Vec<Prog
         })
         .collect()
 }
-
 pub async fn add_round_chain_id(data: Vec<Round>, chain_id: u16) -> Vec<Round> {
     data.iter()
         .map(|item| {
@@ -70,7 +66,6 @@ pub async fn add_round_chain_id(data: Vec<Round>, chain_id: u16) -> Vec<Round> {
         })
         .collect()
 }
-
 pub async fn add_project_chain_id(data: Vec<Project>, chain_id: u16) -> Vec<Project> {
     data.iter()
         .map(|item| {
@@ -80,7 +75,6 @@ pub async fn add_project_chain_id(data: Vec<Project>, chain_id: u16) -> Vec<Proj
         })
         .collect()
 }
-
 pub async fn add_vote_chain_id(data: Vec<Vote>, chain_id: u16) -> Vec<Vote> {
     data.iter()
         .map(|item| {
@@ -90,7 +84,8 @@ pub async fn add_vote_chain_id(data: Vec<Vote>, chain_id: u16) -> Vec<Vote> {
         })
         .collect()
 }
-
+// TOOD: Create a query_ functions such that the queries are configuable in a some way
+// Query all programs
 #[async_recursion]
 pub async fn r_query_programs(gql: &Client, last_id: &str) -> Vec<Program> {
     let query = format!(
@@ -120,6 +115,7 @@ pub async fn r_query_programs(gql: &Client, last_id: &str) -> Vec<Program> {
     programs
 }
 
+// Queries all rounds
 #[async_recursion]
 pub async fn r_query_rounds(gql: &Client, last_id: &str) -> Vec<Round> {
     let query = format!(
@@ -156,6 +152,7 @@ pub async fn r_query_rounds(gql: &Client, last_id: &str) -> Vec<Round> {
     rounds
 }
 
+// Query all projects
 #[async_recursion]
 pub async fn r_query_projects(gql: &Client, last_id: &str) -> Vec<Project> {
     let query = format!(
@@ -189,6 +186,7 @@ pub async fn r_query_projects(gql: &Client, last_id: &str) -> Vec<Project> {
     projects
 }
 
+// Query all votes
 #[async_recursion]
 pub async fn r_query_votes(gql: &Client, last_id: &str) -> Vec<Vote> {
     let query = format!(
@@ -224,15 +222,31 @@ pub async fn r_query_votes(gql: &Client, last_id: &str) -> Vec<Vote> {
     votes
 }
 
-async fn fetch_from_ipfs(cid: &str) -> Result<String, Error> {
-    let react_app_pinata_gateway = "gitcoin.mypinata.cloud";
-    let url = format!("https://{}/ipfs/{}", react_app_pinata_gateway, cid);
-    let response = reqwest::get(&url).await?;
+// Fetch data from the IPFS Gateway of choice
+pub async fn fetch_from_ipfs(cid: &str) -> Result<serde_json::Value, reqwest::Error> {
+    let gateway: String = dotenv::var("PINATA_GATEWAY").expect("no gateway");
+    let url = format!("https://{}/ipfs/{}", gateway, cid);
+    let response = reqwest::get(&url).await.expect("Error getting IPFS data");
+    response.json::<serde_json::Value>().await
+}
 
-    if response.status().is_success() {
-        let body = response.text().await?;
-        Ok(body)
-    } else {
-        Err(Error::from(response))
+// Backfill of the project id for version <0.2.0 vote
+pub async fn backfill_project_id(votes: Vec<Vote>) -> Vec<Vote> {
+    let mut votes = votes;
+    let mut votes_to_update = Vec::new();
+    for vote in votes.iter_mut() {
+        if vote.version == "0.1.0" {
+            println!("Backfilling project id for vote {}", vote.id);
+        }
     }
+    votes_to_update
+}
+
+pub struct MetaPtr {
+    protocol: u16,
+    pointer: String,
+}
+// TODO: Support other protocls
+pub async fn fetch_metaptr_data(meta: MetaPtr) -> Result<serde_json::Value, reqwest::Error> {
+    fetch_from_ipfs(&meta.pointer).await
 }
