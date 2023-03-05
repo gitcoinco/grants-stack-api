@@ -4,6 +4,7 @@
 
 - Rust 1.54 or higher
 - PostgreSQL 12 or higher
+- Git
 - Docker
 - Diesel CLI
 
