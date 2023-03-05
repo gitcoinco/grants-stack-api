@@ -3,7 +3,8 @@ use diesel::{Connection, ConnectionResult, PgConnection};
 use gql_client::Client;
 
 use crate::models::{
-    Program, ProgramsQuery, Project, ProjectsQuery, Round, RoundsQuery, Vote, VotesQuery,
+    MetaPtrQuery, Program, ProgramsQuery, Project, ProjectsMetaPtr, ProjectsQuery, Round,
+    RoundsQuery, Vote, VotesQuery,
 };
 
 pub const ETHEREUM_MAINNET: u16 = 1;
@@ -222,6 +223,46 @@ pub async fn r_query_votes(gql: &Client, last_id: &str) -> Vec<Vote> {
     votes
 }
 
+// Query all projectMetaPtrs
+#[async_recursion]
+pub async fn r_query_project_meta_ptrs(gql: &Client, last_id: &str) -> Vec<ProjectsMetaPtr> {
+    let query = format!(
+        "
+        query GetProjectMetaPtrsQuery {{
+            rounds(first: 1000, where: {{ id_gt: \"{}\" }}) {{
+                id
+                projectsMetaPtr {{
+                    pointer
+                    protocol
+                    id
+                }}
+            }}
+        }}
+        ",
+        last_id
+    );
+
+    let res = gql
+        .query::<MetaPtrQuery>(&query)
+        .await
+        .unwrap()
+        .expect("Error getting projectMetaPtrs");
+    // check if there is a projectMetaPtr
+    let mut project_meta_ptrs = res
+        .rounds
+        .iter()
+        .filter_map(|round| round.projectsMetaPtr.clone())
+        .collect::<Vec<ProjectsMetaPtr>>();
+
+    if project_meta_ptrs.len() < 1000 {
+        return project_meta_ptrs;
+    }
+    let last_id = project_meta_ptrs.last().unwrap().roundId.clone();
+    let mut next_project_meta_ptrs = Box::pin(r_query_project_meta_ptrs(gql, &last_id)).await;
+    project_meta_ptrs.append(&mut next_project_meta_ptrs);
+    project_meta_ptrs
+}
+
 // Fetch data from the IPFS Gateway of choice
 pub async fn fetch_from_ipfs(cid: &str) -> Result<serde_json::Value, reqwest::Error> {
     let gateway: String = dotenv::var("PINATA_GATEWAY").expect("no gateway");
@@ -236,17 +277,9 @@ pub async fn backfill_project_id(votes: Vec<Vote>) -> Vec<Vote> {
     let mut votes_to_update = Vec::new();
     for vote in votes.iter_mut() {
         if vote.version == "0.1.0" {
+            // TODO: Implement Backfilling of project id for version <0.2.0 vote
             println!("Backfilling project id for vote {}", vote.id);
         }
     }
     votes_to_update
-}
-
-pub struct MetaPtr {
-    protocol: u16,
-    pointer: String,
-}
-// TODO: Support other protocls
-pub async fn fetch_metaptr_data(meta: MetaPtr) -> Result<serde_json::Value, reqwest::Error> {
-    fetch_from_ipfs(&meta.pointer).await
 }

@@ -2,7 +2,7 @@
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::schema::{programs, projects, rounds, votes};
+use crate::schema::{programs, projects, projects_meta_ptrs, rounds, votes};
 
 // PROGRAMS
 #[derive(Clone, Insertable, Queryable, Serialize, Deserialize, Debug)]
@@ -76,4 +76,22 @@ pub struct Vote {
 #[derive(Deserialize, Debug)]
 pub struct VotesQuery {
     pub qfvotes: Vec<Vote>,
+}
+
+// #[derive(Deserialize, Debug)]
+#[derive(Clone, Insertable, Queryable, Serialize, Deserialize, Debug)]
+#[diesel(table_name = projects_meta_ptrs)]
+pub struct ProjectsMetaPtr {
+    pub pointer: String,
+    pub protocol: String,
+    pub roundId: String,
+}
+#[derive(Deserialize, Debug)]
+pub struct ProjectsMetaPtrQuery {
+    pub id: String, // round ID
+    pub projectsMetaPtr: Option<ProjectsMetaPtr>,
+}
+#[derive(Deserialize, Debug)]
+pub struct MetaPtrQuery {
+    pub rounds: Vec<ProjectsMetaPtrQuery>,
 }

@@ -62,3 +62,9 @@ CREATE TABLE project_summaries (
     "totalVoters" TEXT NOT NULL,
     CONSTRAINT "project_summaries_pkey" PRIMARY KEY ("id")
 );
+CREATE TABLE projects_meta_ptrs (
+    "roundId" TEXT NOT NULL,
+    "pointer" TEXT,
+    "protocol" TEXT,
+    CONSTRAINT "project_meta_ptrs_pkey" PRIMARY KEY ("roundId")
+);

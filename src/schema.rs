@@ -47,6 +47,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    projects_meta_ptrs (roundId) {
+        roundId -> Text,
+        pointer -> Nullable<Text>,
+        protocol -> Nullable<Text>,
+    }
+}
+
+diesel::table! {
     rounds (id) {
         id -> Text,
         payoutStrategy -> Text,
@@ -80,6 +88,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     project_matches,
     project_summaries,
     projects,
+    projects_meta_ptrs,
     rounds,
     votes,
 );

@@ -1,11 +1,11 @@
 use diesel::{PgConnection, QueryDsl, RunQueryDsl};
 
-use crate::models::{Program, Project, Round, Vote};
+use crate::models::{Program, Project, ProjectsMetaPtr, Round, Vote};
 use crate::schema::programs::dsl::*;
 use crate::schema::projects::dsl::*;
 use crate::schema::rounds::dsl::*;
 use crate::schema::votes::dsl::*;
-use crate::schema::{programs, projects, rounds, votes};
+use crate::schema::{programs, projects, projects_meta_ptrs, rounds, votes};
 use diesel::ExpressionMethods;
 
 pub fn new_program(conn: &mut PgConnection, data: Program) {
@@ -80,6 +80,19 @@ pub fn new_votes(conn: &mut PgConnection, data: Vec<Vote>) {
     insert_votes(conn, votes_data);
 }
 
+pub fn new_projects_meta_ptrs(conn: &mut PgConnection, data: Vec<ProjectsMetaPtr>) {
+    let chunk_size = 1000;
+    let mut projects_meta_ptrs_data = data;
+
+    while projects_meta_ptrs_data.len() > chunk_size {
+        let (chunk, rest) = projects_meta_ptrs_data.split_at(chunk_size);
+        insert_project_meta_ptrs(conn, chunk.to_vec());
+        projects_meta_ptrs_data = rest.to_vec()
+    }
+
+    insert_project_meta_ptrs(conn, projects_meta_ptrs_data);
+}
+
 fn insert_rounds(conn: &mut PgConnection, data: Vec<Round>) {
     // insert into round table, ignore duplicates
     diesel::insert_into(rounds::table)
@@ -118,6 +131,16 @@ fn insert_projects(conn: &mut PgConnection, data: Vec<Project>) {
         .do_nothing()
         .execute(conn)
         .expect("Error saving new project");
+}
+
+fn insert_project_meta_ptrs(conn: &mut PgConnection, data: Vec<ProjectsMetaPtr>) {
+    // insert into project_meta_ptr table, ignore duplicates
+    diesel::insert_into(projects_meta_ptrs::table)
+        .values(&data)
+        .on_conflict(projects_meta_ptrs::roundId)
+        .do_nothing()
+        .execute(conn)
+        .expect("Error saving new project_meta_ptr");
 }
 
 pub async fn get_programs(conn: &mut PgConnection) -> Vec<Program> {
