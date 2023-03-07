@@ -52,7 +52,8 @@ struct RoundResponseData {
 }
 
 // an endpoint for getting round data
-// use ?round_id=0x01...?query={data, round_meta_ptr, voting_strategy, round_projects_meta_ptr, round_projects, qf_votes}
+// use ?round_id=0x01...&{data, round_meta_ptr, voting_strategy, round_projects_meta_ptr, round_projects, qf_votes}=true/false
+// multiple params can be used at once
 #[get("/round")]
 async fn get_round_handler(query: web::Query<GetRoundDataQueryParams>) -> impl Responder {
     let mut res_data = RoundResponseData {
@@ -144,7 +145,8 @@ struct ProjectResponseData {
     project_votes: Option<Vec<QfVoteItem>>,
 }
 // an endpoint for getting project data
-// use ?project_id=0x01...?query={data, project_meta_ptr, project_votes}
+// use ?project_id=0x01...&{data, project_meta_ptr, project_votes}=true/false
+// multiple params can be used at the same time
 #[get("/project")]
 async fn get_project_handler(query: web::Query<GetProjectDataQueryParams>) -> impl Responder {
 
