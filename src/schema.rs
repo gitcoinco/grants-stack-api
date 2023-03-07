@@ -51,8 +51,8 @@ diesel::table! {
         project -> Text,
         createdAt -> Text,
         updatedAt -> Text,
-        chainId -> Nullable<Text>,
-        roundId -> Nullable<Text>,
+        chainId -> Text,
+        roundId -> Text,
     }
 }
 
@@ -77,8 +77,8 @@ diesel::table! {
         projectId -> Text,
         token -> Text,
         version -> Text,
-        chainId -> Nullable<Text>,
-        roundId -> Nullable<Text>,
+        chainId -> Text,
+        roundId -> Text,
     }
 }
 
@@ -134,11 +134,11 @@ diesel::table! {
 diesel::table! {
     voting_strategies (id) {
         id -> Text,
-        strategyAddress -> Nullable<Text>,
-        strategyName -> Nullable<Text>,
-        version -> Nullable<Text>,
-        roundId -> Nullable<Text>,
-        chainId -> Nullable<Text>,
+        strategyAddress -> Text,
+        strategyName -> Text,
+        version -> Text,
+        roundId -> Text,
+        chainId -> Text,
     }
 }
 

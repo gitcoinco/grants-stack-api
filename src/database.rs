@@ -363,7 +363,7 @@ pub fn new_projects1(conn: &mut PgConnection, data: Vec<Project2>) {
             project: project2.project,
             createdAt: project2.createdAt,
             updatedAt: project2.updatedAt,
-            chainId: Some(project2.chainId.unwrap_or_default().to_string()),
+            chainId: project2.chainId.unwrap().to_string(),
             roundId: project2.round.id,
         };
 
@@ -434,4 +434,48 @@ pub async fn get_round_projects_meta_ptr(conn: &mut PgConnection, round_id: Stri
         .expect("Error loading round projects meta ptr");
 
     round_projects_meta_ptr
+}
+
+pub async fn get_round_data(conn: &mut PgConnection, round_id: String) -> Vec<RoundItem> {
+    use crate::schema::rounds::dsl::*;
+
+    let round = rounds
+        .filter(id.eq(round_id))
+        .load::<RoundItem>(conn)
+        .expect("Error loading round");
+
+    round
+}
+
+pub async fn get_round_voting_strategy(conn: &mut PgConnection, round_id: String) -> Vec<VotingStrategyItem> {
+    use crate::schema::voting_strategies::dsl::*;
+
+    let round_voting_strategy = voting_strategies
+        .filter(roundId.eq(round_id))
+        .load::<VotingStrategyItem>(conn)
+        .expect("Error loading round voting strategy");
+
+    round_voting_strategy
+}
+
+pub async fn get_round_projects(conn: &mut PgConnection, round_id: String) -> Vec<ProjectItem> {
+    use crate::schema::projects::dsl::*;
+
+    let round_projects = projects
+        .filter(roundId.eq(round_id))
+        .load::<ProjectItem>(conn)
+        .expect("Error loading round projects");
+
+    round_projects
+}
+
+pub async fn get_round_votes(conn: &mut PgConnection, round_id: String) -> Vec<QfVoteItem> {
+    use crate::schema::qf_votes::dsl::*;
+
+    let round_qf_votes = qf_votes
+        .filter(roundId.eq(round_id))
+        .load::<QfVoteItem>(conn)
+        .expect("Error loading round qf votes");
+
+    round_qf_votes
 }

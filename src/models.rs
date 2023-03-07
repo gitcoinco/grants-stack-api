@@ -178,7 +178,7 @@ pub struct ProjectItem {
     pub project: String,
     pub createdAt: String,
     pub updatedAt: String,
-    pub chainId: Option<String>,
+    pub chainId: String,
     pub roundId: String,
 }
 

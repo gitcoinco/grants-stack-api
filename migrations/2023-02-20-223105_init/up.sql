@@ -24,8 +24,8 @@ CREATE TABLE projects (
     "project" TEXT NOT NULL,
     "createdAt" TEXT NOT NULL,
     "updatedAt" TEXT NOT NULL,
-    "chainId" TEXT,
-    "roundId" TEXT,
+    "chainId" TEXT NOT NULL,
+    "roundId" TEXT NOT NULL,
     CONSTRAINT "projects_pkey" PRIMARY KEY ("id")
 );
 CREATE TABLE votes (
@@ -75,11 +75,11 @@ CREATE TABLE projects_meta_ptrs (
 
 CREATE TABLE voting_strategies (
     "id" TEXT NOT NULL,
-    "strategyAddress" TEXT,
-    "strategyName" TEXT,
-    "version" TEXT,
-    "roundId" TEXT,
-    "chainId" TEXT,
+    "strategyAddress" TEXT NOT NULL,
+    "strategyName" TEXT NOT NULL,
+    "version" TEXT NOT NULL,
+    "roundId" TEXT NOT NULL,
+    "chainId" TEXT NOT NULL,
     CONSTRAINT "voting_strategies_pkey" PRIMARY KEY ("id")
 );
 
@@ -122,8 +122,8 @@ CREATE TABLE qf_votes (
     "projectId" TEXT NOT NULL,
     "token" TEXT NOT NULL,
     "version" TEXT NOT NULL,
-    "chainId" TEXT,
-    "roundId" TEXT,
+    "chainId" TEXT NOT NULL,
+    "roundId" TEXT NOT NULL,
 
     CONSTRAINT "qf_votes_pkey" PRIMARY KEY ("id")
 )
