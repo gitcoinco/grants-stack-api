@@ -68,6 +68,11 @@ async fn get_round_data_handler(query: web::Query<GetRoundDataQueryParams>) -> i
         round_data.round_meta_ptr = Some(round_meta_ptr[0].clone());
     }
 
+    if query.projects_meta_ptr.unwrap_or(false) {
+        let projects_meta_ptr = database::get_round_projects_meta_ptr(pg, round_id.to_string()).await;
+        round_data.projects_meta_ptr = Some(projects_meta_ptr[0].clone());
+    }
+
     // TODO: implement other query params
 
     HttpResponse::Ok().json(round_data)

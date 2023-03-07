@@ -95,10 +95,10 @@ CREATE TABLE round_meta_ptrs (
 
 CREATE TABLE round_projects_meta_ptrs (
     "id" TEXT NOT NULL,
-    "protocol" TEXT,
-    "pointer" TEXT,
-    "roundId" TEXT,
-    "chainId" TEXT,
+    "protocol" TEXT NOT NULL,
+    "pointer" TEXT NOT NULL,
+    "roundId" TEXT NOT NULL,
+    "chainId" TEXT NOT NULL,
 
     CONSTRAINT "round_projects_meta_ptrs_pkey" PRIMARY KEY ("id")
 );

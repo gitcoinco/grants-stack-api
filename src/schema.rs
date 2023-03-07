@@ -95,10 +95,10 @@ diesel::table! {
 diesel::table! {
     round_projects_meta_ptrs (id) {
         id -> Text,
-        protocol -> Nullable<Text>,
-        pointer -> Nullable<Text>,
-        roundId -> Nullable<Text>,
-        chainId -> Nullable<Text>,
+        protocol -> Text,
+        pointer -> Text,
+        roundId -> Text,
+        chainId -> Text,
     }
 }
 

@@ -424,3 +424,14 @@ pub async fn get_round_meta_ptr(conn: &mut PgConnection, round_id: String) -> Ve
 
     round_meta_ptr
 }
+
+pub async fn get_round_projects_meta_ptr(conn: &mut PgConnection, round_id: String) -> Vec<RoundProjectsMetaPtrItem> {
+    use crate::schema::round_projects_meta_ptrs::dsl::*;
+
+    let round_projects_meta_ptr = round_projects_meta_ptrs
+        .filter(roundId.eq(round_id))
+        .load::<RoundProjectsMetaPtrItem>(conn)
+        .expect("Error loading round projects meta ptr");
+
+    round_projects_meta_ptr
+}
