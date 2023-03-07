@@ -20,12 +20,12 @@ CREATE TABLE rounds (
 );
 CREATE TABLE projects (
     "id" TEXT NOT NULL,
-    "status" TEXT NOT NULL,
     "payoutAddress" TEXT,
     "project" TEXT NOT NULL,
     "createdAt" TEXT NOT NULL,
     "updatedAt" TEXT NOT NULL,
     "chainId" TEXT,
+    "roundId" TEXT,
     CONSTRAINT "projects_pkey" PRIMARY KEY ("id")
 );
 CREATE TABLE votes (
@@ -63,8 +63,67 @@ CREATE TABLE project_summaries (
     CONSTRAINT "project_summaries_pkey" PRIMARY KEY ("id")
 );
 CREATE TABLE projects_meta_ptrs (
-    "roundId" TEXT NOT NULL,
-    "pointer" TEXT,
+    "id" TEXT NOT NULL,
     "protocol" TEXT,
-    CONSTRAINT "project_meta_ptrs_pkey" PRIMARY KEY ("roundId")
+    "pointer" TEXT,
+    "createdAt" TEXT,
+    "updatedAt" TEXT,
+    "roundId" TEXT,
+
+    CONSTRAINT "projects_meta_ptrs_pkey" PRIMARY KEY ("id")
 );
+
+CREATE TABLE voting_strategies (
+    "id" TEXT NOT NULL,
+    "strategyAddress" TEXT,
+    "strategyName" TEXT,
+    "version" TEXT,
+    "roundId" TEXT,
+    "chainId" TEXT,
+    CONSTRAINT "voting_strategies_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE round_meta_ptrs (
+    "id" TEXT NOT NULL,
+    "protocol" TEXT NOT NULL,
+    "pointer" TEXT NOT NULL,
+    "roundId" TEXT NOT NULL,
+    "chainId" TEXT NOT NULL,
+
+    CONSTRAINT "round_meta_ptrs_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE round_projects_meta_ptrs (
+    "id" TEXT NOT NULL,
+    "protocol" TEXT,
+    "pointer" TEXT,
+    "roundId" TEXT,
+    "chainId" TEXT,
+
+    CONSTRAINT "round_projects_meta_ptrs_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE project_meta_ptrs (
+    "id" TEXT NOT NULL,
+    "protocol" TEXT,
+    "pointer" TEXT,
+    "roundId" TEXT,
+    "chainId" TEXT,
+
+    CONSTRAINT "project_meta_ptrs_pkey" PRIMARY KEY ("id")
+); 
+
+CREATE TABLE qf_votes (
+    "id" TEXT NOT NULL,
+    "createdAt" TEXT NOT NULL,
+    "amount" TEXT NOT NULL,
+    "from" TEXT NOT NULL,
+    "to" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "version" TEXT NOT NULL,
+    "chainId" TEXT,
+    "roundId" TEXT,
+
+    CONSTRAINT "qf_votes_pkey" PRIMARY KEY ("id")
+)
