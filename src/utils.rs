@@ -3,8 +3,9 @@ use diesel::{Connection, ConnectionResult, PgConnection};
 use gql_client::Client;
 
 use crate::models::{
-    MetaPtrQuery, Program, ProgramsQuery, Project, ProjectsMetaPtr, ProjectsQuery, Round,
-    RoundsQuery, Vote, VotesQuery,
+    Project, ProjectMetaPtr, QfVote, QfVotesDerivedQuery, Round, RoundMetaPtr,
+    RoundProjectsDerivedQuery, RoundProjectsMetaPtr, RoundsDerivedQuery, VotingStrategy,
+    VotingStrategyDerivedQuery,
 };
 
 pub const ETHEREUM_MAINNET: u16 = 1;
@@ -47,193 +48,64 @@ pub fn establish_gql_client(chain_id: u16) -> Client {
     Client::new(gql_url)
 }
 
-// add_*_chain_id is meant to retoractively add the chain ID of the data
-// TODO: See about a generic funtion to avoid duplicated code
-pub async fn add_program_chain_id(data: Vec<Program>, chain_id: u16) -> Vec<Program> {
-    data.iter()
-        .map(|item| {
-            let mut item = item.clone();
-            item.chainId = Option::from(chain_id.to_string());
-            item
-        })
-        .collect()
-}
-pub async fn add_round_chain_id(data: Vec<Round>, chain_id: u16) -> Vec<Round> {
-    data.iter()
-        .map(|item| {
-            let mut item = item.clone();
-            item.chainId = Option::from(chain_id.to_string());
-            item
-        })
-        .collect()
-}
-pub async fn add_project_chain_id(data: Vec<Project>, chain_id: u16) -> Vec<Project> {
-    data.iter()
-        .map(|item| {
-            let mut item = item.clone();
-            item.chainId = Option::from(chain_id.to_string());
-            item
-        })
-        .collect()
-}
-pub async fn add_vote_chain_id(data: Vec<Vote>, chain_id: u16) -> Vec<Vote> {
-    data.iter()
-        .map(|item| {
-            let mut item = item.clone();
-            item.chainId = Option::from(chain_id.to_string());
-            item
-        })
-        .collect()
-}
-// TOOD: Create a query_ functions such that the queries are configuable in a some way
-// Query all programs
+/// Queries for the subgraph
 #[async_recursion]
-pub async fn r_query_programs(gql: &Client, last_id: &str) -> Vec<Program> {
+pub async fn r_query_round_meta_ptr(
+    gql: &Client,
+    last_id: &str,
+    chain_id: u16,
+) -> Vec<RoundMetaPtr> {
     let query = format!(
         "
-        query GetProgramsQuery {{
-            programs(first: 1000, where: {{ id_gt: \"{}\" }}) {{
-                id
-                createdAt
-                updatedAt
-            }}
-        }}
-        ",
-        last_id
-    );
-    let res = gql
-        .query::<ProgramsQuery>(&query)
-        .await
-        .unwrap()
-        .expect("Error getting programs");
-    let mut programs = res.programs;
-    if programs.len() < 1000 {
-        return programs;
-    }
-    let last_id = programs.last().unwrap().id.clone();
-    let mut next_programs = Box::pin(r_query_programs(gql, &last_id)).await;
-    programs.append(&mut next_programs);
-    programs
-}
-
-// Queries all rounds
-#[async_recursion]
-pub async fn r_query_rounds(gql: &Client, last_id: &str) -> Vec<Round> {
-    let query = format!(
-        "
-        query GetRoundsQuery {{
+        query GetRoundsMetaPtrQuery {{
             rounds(first: 1000, where: {{ id_gt: \"{}\" }}) {{
                 id
-                payoutStrategy
-                token
-                roundStartTime
-                roundEndTime
-                applicationsStartTime
-                applicationsEndTime
-                createdAt
-                updatedAt
+                roundMetaPtr {{
+                    id
+                    pointer
+                    protocol
+                }}
             }}
         }}
         ",
         last_id
     );
     let res = gql
-        .query::<RoundsQuery>(&query)
+        .query::<RoundsDerivedQuery<RoundMetaPtr>>(&query)
         .await
         .unwrap()
         .expect("Error getting rounds");
 
-    let mut rounds = res.rounds;
-    if rounds.len() < 1000 {
-        return rounds;
+    let mut round_meta_ptrs = res.rounds;
+    // add chain id
+    round_meta_ptrs.iter_mut().for_each(|item| {
+        item.chainId = Option::from(chain_id);
+    });
+
+    if round_meta_ptrs.len() < 1000 {
+        return round_meta_ptrs;
     }
-    let last_id = rounds.last().unwrap().id.clone();
-    let mut next_rounds = Box::pin(r_query_rounds(gql, &last_id)).await;
-    rounds.append(&mut next_rounds);
-    rounds
+    let last_id = round_meta_ptrs.last().unwrap().id.clone();
+    let mut next_rounds = Box::pin(r_query_round_meta_ptr(gql, &last_id, chain_id)).await;
+    round_meta_ptrs.append(&mut next_rounds);
+    round_meta_ptrs
 }
 
-// Query all projects
 #[async_recursion]
-pub async fn r_query_projects(gql: &Client, last_id: &str) -> Vec<Project> {
+pub async fn r_query_voting_strategies(
+    gql: &Client,
+    last_id: &str,
+    chain_id: u16,
+) -> Vec<VotingStrategy> {
     let query = format!(
         "
-        query GetProjectQuery {{
-            roundProjects(first: 1000, where: {{ id_gt: \"{}\" }}) {{
+        query GetVotingStrategiesQuery {{
+            votingStrategies(first: 1000, where: {{ id_gt: \"{}\", }}) {{
                 id
-                status
-                payoutAddress
-                project
-                createdAt
-                updatedAt
-            }}
-        }}
-        ",
-        last_id
-    );
-
-    let res = gql
-        .query::<ProjectsQuery>(&query)
-        .await
-        .unwrap()
-        .expect("Error getting projects");
-    let mut projects = res.roundProjects;
-    if projects.len() < 1000 {
-        return projects;
-    }
-    let last_id = projects.last().unwrap().id.clone();
-    let mut next_projects = Box::pin(r_query_projects(gql, &last_id)).await;
-    projects.append(&mut next_projects);
-    projects
-}
-
-// Query all votes
-#[async_recursion]
-pub async fn r_query_votes(gql: &Client, last_id: &str) -> Vec<Vote> {
-    let query = format!(
-        "
-        query GetVotesQuery {{
-            qfvotes(first: 1000, where: {{ id_gt: \"{}\" }}) {{
-                id
-                createdAt
-                amount
-                from
-                to
+                strategyAddress
+                strategyName
                 version
-                token
-                projectId
-            }}
-        }}
-        ",
-        last_id
-    );
-    let res = gql
-        .query::<VotesQuery>(&query)
-        .await
-        .unwrap()
-        .expect("Error getting votes");
-
-    let mut votes = res.qfvotes;
-    if votes.len() < 1000 {
-        return votes;
-    }
-    let last_id = votes.last().unwrap().id.clone();
-    let mut next_votes = Box::pin(r_query_votes(gql, &last_id)).await;
-    votes.append(&mut next_votes);
-    votes
-}
-
-// Query all projectMetaPtrs
-#[async_recursion]
-pub async fn r_query_project_meta_ptrs(gql: &Client, last_id: &str) -> Vec<ProjectsMetaPtr> {
-    let query = format!(
-        "
-        query GetProjectMetaPtrsQuery {{
-            rounds(first: 1000, where: {{ id_gt: \"{}\" }}) {{
-                id
-                projectsMetaPtr {{
-                    pointer
-                    protocol
+                round {{
                     id
                 }}
             }}
@@ -241,26 +113,151 @@ pub async fn r_query_project_meta_ptrs(gql: &Client, last_id: &str) -> Vec<Proje
         ",
         last_id
     );
-
     let res = gql
-        .query::<MetaPtrQuery>(&query)
+        .query::<VotingStrategyDerivedQuery<VotingStrategy>>(&query)
         .await
         .unwrap()
-        .expect("Error getting projectMetaPtrs");
-    // check if there is a projectMetaPtr
-    let mut project_meta_ptrs = res
-        .rounds
-        .iter()
-        .filter_map(|round| round.projectsMetaPtr.clone())
-        .collect::<Vec<ProjectsMetaPtr>>();
+        .expect("Error getting rounds");
 
-    if project_meta_ptrs.len() < 1000 {
-        return project_meta_ptrs;
+    let mut voting_strategies = res.votingStrategies;
+    // add chain id
+    voting_strategies.iter_mut().for_each(|item| {
+        item.chainId = Option::from(chain_id);
+    });
+    if voting_strategies.len() < 1000 {
+        return voting_strategies;
     }
-    let last_id = project_meta_ptrs.last().unwrap().roundId.clone();
-    let mut next_project_meta_ptrs = Box::pin(r_query_project_meta_ptrs(gql, &last_id)).await;
-    project_meta_ptrs.append(&mut next_project_meta_ptrs);
-    project_meta_ptrs
+    let last_id = voting_strategies.last().unwrap().id.clone();
+    let mut next_rounds = Box::pin(r_query_voting_strategies(gql, &last_id, chain_id)).await;
+    voting_strategies.append(&mut next_rounds);
+    voting_strategies
+}
+
+#[async_recursion]
+pub async fn r_query_round_projects(gql: &Client, last_id: &str, chain_id: u16) -> Vec<Project> {
+    let query = format!(
+        "
+        query GetRoundProjectsQuery {{
+            roundProjects(first: 1000, where: {{ id_gt: \"{}\" }}) {{
+                id
+                createdAt
+                payoutAddress
+                project
+                updatedAt
+                round {{
+                    id
+                }}
+            }}
+        }}
+        ",
+        last_id
+    );
+    let res = gql
+        .query::<RoundProjectsDerivedQuery<Project>>(&query)
+        .await
+        .unwrap()
+        .expect("Error getting rounds");
+
+    let mut round_projects = res.roundProjects;
+    // add chain id
+    round_projects.iter_mut().for_each(|item| {
+        item.chainId = Option::from(chain_id);
+    });
+    if round_projects.len() < 1000 {
+        return round_projects;
+    }
+    let last_id = round_projects.last().unwrap().id.clone();
+    let mut next_rounds = Box::pin(r_query_round_projects(gql, &last_id, chain_id)).await;
+    round_projects.append(&mut next_rounds);
+    round_projects
+}
+
+#[async_recursion]
+pub async fn r_query_project_meta_ptrs(
+    gql: &Client,
+    last_id: &str,
+    chain_id: u16,
+) -> Vec<ProjectMetaPtr> {
+    let query = format!(
+        "
+        query GetProjectMetaPtrQuery {{
+            roundProjects(first: 1000, where: {{ id_gt: \"{}\", metaPtr_not: null}}) {{
+                id
+                metaPtr {{
+                    id
+                    pointer
+                    protocol
+                }}
+                round {{
+                    id
+                }}
+            }}
+        }}
+        ",
+        last_id
+    );
+    let res = gql
+        .query::<RoundProjectsDerivedQuery<ProjectMetaPtr>>(&query)
+        .await
+        .unwrap()
+        .expect("Error getting rounds");
+
+    let mut round_projects_meta_ptrs = res.roundProjects;
+    // add chain id
+    round_projects_meta_ptrs.iter_mut().for_each(|item| {
+        item.chainId = Option::from(chain_id);
+    });
+    if round_projects_meta_ptrs.len() < 1000 {
+        return round_projects_meta_ptrs;
+    }
+    let last_id = round_projects_meta_ptrs.last().unwrap().id.clone();
+    let mut next_rounds = Box::pin(r_query_project_meta_ptrs(gql, &last_id, chain_id)).await;
+    round_projects_meta_ptrs.append(&mut next_rounds);
+    round_projects_meta_ptrs
+}
+
+#[async_recursion]
+pub async fn r_query_qf_votes(gql: &Client, last_id: &str, chain_id: u16) -> Vec<QfVote> {
+    let query = format!(
+        "
+        query GetQfVotesQuery {{
+            qfvotes(first: 1000, where: {{ id_gt: \"{}\" }}) {{
+                id
+                version
+                token
+                from
+                to
+                amount
+                projectId
+                createdAt
+                votingStrategy {{
+                    round {{
+                        id
+                    }}
+                }}
+            }}
+        }}
+        ",
+        last_id
+    );
+    let res = gql
+        .query::<QfVotesDerivedQuery<QfVote>>(&query)
+        .await
+        .unwrap()
+        .expect("Error getting rounds");
+
+    let mut qf_votes = res.qfvotes;
+    // add chain id
+    qf_votes.iter_mut().for_each(|item| {
+        item.chainId = Option::from(chain_id);
+    });
+    if qf_votes.len() < 1000 {
+        return qf_votes;
+    }
+    let last_id = qf_votes.last().unwrap().id.clone();
+    let mut next_rounds = Box::pin(r_query_qf_votes(gql, &last_id, chain_id)).await;
+    qf_votes.append(&mut next_rounds);
+    qf_votes
 }
 
 // Fetch data from the IPFS Gateway of choice
@@ -271,15 +268,83 @@ pub async fn fetch_from_ipfs(cid: &str) -> Result<serde_json::Value, reqwest::Er
     response.json::<serde_json::Value>().await
 }
 
-// Backfill of the project id for version <0.2.0 vote
-pub async fn backfill_project_id(votes: Vec<Vote>) -> Vec<Vote> {
-    let mut votes = votes;
-    let mut votes_to_update = Vec::new();
-    for vote in votes.iter_mut() {
-        if vote.version == "0.1.0" {
-            // TODO: Implement Backfilling of project id for version <0.2.0 vote
-            println!("Backfilling project id for vote {}", vote.id);
-        }
+#[async_recursion]
+pub async fn r_query_rounds(gql: &Client, last_id: &str, chain_id: u16) -> Vec<Round> {
+    let query = format!(
+        "
+        query GetRoundsQuery {{
+            rounds(first: 1000, where: {{ id_gt: \"{}\" }}) {{
+                id
+                payoutStrategy
+                roundEndTime
+                roundStartTime
+                token
+                updatedAt
+                createdAt
+                applicationsStartTime
+                applicationsEndTime
+            }}
+        }}
+        ",
+        last_id
+    );
+    let res = gql
+        .query::<RoundsDerivedQuery<Round>>(&query)
+        .await
+        .unwrap()
+        .expect("Error getting rounds");
+
+    let mut rounds = res.rounds;
+    // add chain id
+    rounds.iter_mut().for_each(|item| {
+        item.chainId = Option::from(chain_id);
+    });
+    if rounds.len() < 1000 {
+        return rounds;
     }
-    votes_to_update
+    let last_id = rounds.last().unwrap().id.clone();
+    let mut next_rounds = Box::pin(r_query_rounds(gql, &last_id, chain_id)).await;
+    rounds.append(&mut next_rounds);
+    rounds
+}
+
+#[async_recursion]
+pub async fn r_query_round_projects_meta_ptrs(
+    gql: &Client,
+    last_id: &str,
+    chain_id: u16,
+) -> Vec<RoundProjectsMetaPtr> {
+    let query = format!(
+        "
+        query GetRoundProjectsMetaPtrQuery {{
+            rounds(first: 1000, where: {{ id_gt: \"{}\", projectsMetaPtr_not: null }}) {{
+                projectsMetaPtr {{
+                    id
+                    pointer
+                    protocol
+                }}
+                id
+            }}
+        }}
+        ",
+        last_id
+    );
+    let res = gql
+        .query::<RoundsDerivedQuery<RoundProjectsMetaPtr>>(&query)
+        .await
+        .unwrap()
+        .expect("Error getting rounds");
+
+    let mut round_projects_meta_ptrs = res.rounds;
+    // add chain id
+    round_projects_meta_ptrs.iter_mut().for_each(|item| {
+        item.chainId = Option::from(chain_id);
+    });
+    if round_projects_meta_ptrs.len() < 1000 {
+        return round_projects_meta_ptrs;
+    }
+    let last_id = round_projects_meta_ptrs.last().unwrap().id.clone();
+    let mut next_rounds = Box::pin(r_query_round_projects_meta_ptrs(gql, &last_id, chain_id)).await;
+    round_projects_meta_ptrs.append(&mut next_rounds);
+    round_projects_meta_ptrs
 }

@@ -8,7 +8,7 @@
 - Docker
 - Diesel CLI
 
-### Setup
+### Getting started
 
 Clone the repo
 
@@ -38,55 +38,33 @@ docker compose up
 
 ### Endpoints
 
-#### `/seed/{chain_id}`
+#### `GET /seed/{chain_id}`
 
-An endpoint to trigger seeding the database with data from the specified chain_id.
+This endpoint triggers data seeding for the specified chain ID. It accepts a path parameter `chain_id`, and returns a response indicating whether the seeding was successful or not.
 
-##### Parameters
+#### `GET /round`
 
-- `chain_id` (required): The chain id of the data to seed.
+This endpoint fetches round data from the database. It accepts a query parameter `round_id` specifying the round to fetch data for, and optional boolean parameters indicating which pieces of data to include in the response. Multiple parameters can be used at once.
 
-##### Response
+##### Parameter - Description
 
-- `200 OK`: Data seeding completed successfully.
-- `400 Bad Request`: The specified chain id is not supported.
+- `data`: Include round data in the response.
+- `round_meta_ptr`: Include round metadata pointer in the response.
+- `voting_strategy`: Include voting strategy data in the response.
+- `projects_meta_ptr`: Include projects metadata pointer in the response.
+- `round_projects`: Include round projects data in the response.
+- `round_votes`: Include round votes data in the response.
 
-#### `/rounds`
+#### `GET /project`
 
-An endpoint for getting all rounds.
+This endpoint fetches project data from the database. It accepts a query parameter `project_id` specifying the project to fetch data for, and optional boolean parameters indicating which pieces of data to include in the response. Multiple parameters can be used at once.
 
-##### Response
+##### Parameter - Description
 
-- `200 OK`: A JSON array of all rounds.
+- `data`: Include project data in the response.
+- `project_meta_ptr`: Include project metadata pointer in the response.
+- `project_votes`: Include project votes data in the response.
 
-#### `/projects`
+#### `GET /ipfs`
 
-An endpoint for getting all projects.
-
-##### Response
-
-- `200 OK`: A JSON array of all projects.
-
-#### `/votes`
-
-An endpoint for getting votes.
-
-##### Parameters
-
-- `project_id` (optional): A comma-separated list of project ids to filter votes by.
-
-##### Response
-
-- `200 OK`: A JSON array of votes. If project_id is specified, only votes for the specified projects are returned.
-
-#### `/ipfs`
-
-An endpoint for relaying an IPFS query.
-
-##### Parameters
-
-- `cid` (required): The content ID of the IPFS data to fetch.
-
-##### Response
-
-- `200 OK`: The IPFS data as a JSON object.
+This endpoint relays an IPFS query. It accepts a query parameter cid specifying the content ID to query. The response returns the queried data in JSON format. Caching is not yet implemented.
