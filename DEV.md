@@ -51,7 +51,7 @@ The local database is now prepared to be initialized with our table data.
 Begin the table migration. 
 
 ```shell
-diesel migrations run
+diesel migration run
 ```
 
 This applies the `up.sql` migration schema in the latest `migration_*` directory, generating the diesel rust typings.
@@ -59,7 +59,7 @@ This applies the `up.sql` migration schema in the latest `migration_*` directory
 To re-apply a migration run
 
 ```shell
-diesel migrations redo
+diesel migration redo
 ```
 
 Note: this will apply the `down.sql` schema. 
