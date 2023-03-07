@@ -1,6 +1,52 @@
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
-use grants_stack_api::{database, models::{RoundMetaPtrItem, RoundProjectsMetaPtrItem, RoundItem, VotingStrategyItem, ProjectItem, QfVoteItem, ProjectMetaPtrItem}, seed, utils};
+use grants_stack_api::{
+    database,
+    models::{
+        ProjectItem, ProjectMetaPtrItem, QfVoteItem, RoundItem, RoundMetaPtrItem,
+        RoundProjectsMetaPtrItem, VotingStrategyItem,
+    },
+    seed, utils,
+};
 use serde::{Deserialize, Serialize};
+#[derive(Clone, Deserialize, Debug)]
+struct GetRoundDataQueryParams {
+    round_id: String,
+    data: Option<bool>,
+    round_meta_ptr: Option<bool>,
+    voting_strategy: Option<bool>,
+    projects_meta_ptr: Option<bool>,
+    round_projects: Option<bool>,
+    round_votes: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct RoundResponseData {
+    data: Option<RoundItem>,
+    round_meta_ptr: Option<RoundMetaPtrItem>,
+    voting_strategy: Option<VotingStrategyItem>,
+    projects_meta_ptr: Option<RoundProjectsMetaPtrItem>,
+    round_projects: Option<Vec<ProjectItem>>,
+    round_votes: Option<Vec<QfVoteItem>>,
+}
+#[derive(Clone, Deserialize)]
+struct GetProjectDataQueryParams {
+    project_id: String,
+    data: Option<bool>,
+    project_meta_ptr: Option<bool>,
+    project_votes: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct ProjectResponseData {
+    data: Option<ProjectItem>,
+    project_meta_ptr: Option<ProjectMetaPtrItem>,
+    project_votes: Option<Vec<QfVoteItem>>,
+}
+
+#[derive(Deserialize)]
+struct GetIPFSQueryParams {
+    cid: Option<String>,
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -30,27 +76,6 @@ async fn seed_handler(chain_id: web::Path<u16>) -> impl Responder {
     HttpResponse::Ok().body("done: data seeding")
 }
 
-#[derive(Clone, Deserialize, Debug)]
-struct GetRoundDataQueryParams {
-    round_id: String,
-    data: Option<bool>,
-    round_meta_ptr: Option<bool>,
-    voting_strategy: Option<bool>,
-    projects_meta_ptr: Option<bool>,
-    round_projects: Option<bool>,
-    round_votes: Option<bool>,
-}
-
-#[derive(Deserialize,  Serialize, Debug)]
-struct RoundResponseData {
-    data: Option<RoundItem>,
-    round_meta_ptr: Option<RoundMetaPtrItem>,
-    voting_strategy: Option<VotingStrategyItem>,
-    projects_meta_ptr: Option<RoundProjectsMetaPtrItem>,
-    round_projects: Option<Vec<ProjectItem>>,
-    round_votes: Option<Vec<QfVoteItem>>,
-}
-
 // an endpoint for getting round data
 // use ?round_id=0x01...&{data, round_meta_ptr, voting_strategy, round_projects_meta_ptr, round_projects, qf_votes}=true/false
 // multiple params can be used at once
@@ -71,14 +96,12 @@ async fn get_round_handler(query: web::Query<GetRoundDataQueryParams>) -> impl R
         return HttpResponse::BadRequest().body("error: round_id is required");
     }
 
-    // let round_id = query.round_id.clone();
     let query = query.clone();
 
     let round_id = &query.round_id;
     if round_id.is_empty() {
         return HttpResponse::BadRequest().body("error: round_id is required");
     }
-
 
     if query.data.unwrap_or(false) {
         let round_data = database::get_round_data(pg, round_id.to_string()).await;
@@ -99,15 +122,14 @@ async fn get_round_handler(query: web::Query<GetRoundDataQueryParams>) -> impl R
         if !voting_strategy.is_empty() {
             res_data.voting_strategy = Some(voting_strategy[0].clone());
         }
-//        // res_data.voting_strategy = Some(voting_strategy[0].clone());
     }
 
     if query.projects_meta_ptr.unwrap_or(false) {
-        let projects_meta_ptr = database::get_round_projects_meta_ptr(pg, round_id.to_string()).await;
+        let projects_meta_ptr =
+            database::get_round_projects_meta_ptr(pg, round_id.to_string()).await;
         if !projects_meta_ptr.is_empty() {
             res_data.projects_meta_ptr = Some(projects_meta_ptr[0].clone());
         }
-        // res_data.projects_meta_ptr = Some(projects_meta_ptr[0].clone());
     }
 
     if query.round_projects.unwrap_or(false) {
@@ -115,7 +137,6 @@ async fn get_round_handler(query: web::Query<GetRoundDataQueryParams>) -> impl R
         if !round_projects.is_empty() {
             res_data.round_projects = Some(round_projects);
         }
-        // res_data.round_projects = Some(round_projects);
     }
 
     if query.round_votes.unwrap_or(false) {
@@ -123,33 +144,16 @@ async fn get_round_handler(query: web::Query<GetRoundDataQueryParams>) -> impl R
         if !round_votes.is_empty() {
             res_data.round_votes = Some(round_votes);
         }
-        // res_data.round_votes = Some(round_votes);
     }
 
     HttpResponse::Ok().json(res_data)
-
 }
 
-#[derive(Clone, Deserialize)]
-struct GetProjectDataQueryParams {
-    project_id: String,
-    data: Option<bool>,
-    project_meta_ptr: Option<bool>,
-    project_votes: Option<bool>,
-}
-
-#[derive(Deserialize,  Serialize, Debug)]
-struct ProjectResponseData {
-    data: Option<ProjectItem>,
-    project_meta_ptr: Option<ProjectMetaPtrItem>,
-    project_votes: Option<Vec<QfVoteItem>>,
-}
 // an endpoint for getting project data
 // use ?project_id=0x01...&{data, project_meta_ptr, project_votes}=true/false
 // multiple params can be used at the same time
 #[get("/project")]
 async fn get_project_handler(query: web::Query<GetProjectDataQueryParams>) -> impl Responder {
-
     let mut res_data = ProjectResponseData {
         data: None,
         project_meta_ptr: None,
@@ -188,13 +192,8 @@ async fn get_project_handler(query: web::Query<GetProjectDataQueryParams>) -> im
     }
 
     HttpResponse::Ok().json(res_data)
-
 }
 
-#[derive(Deserialize)]
-struct GetIPFSQueryParams {
-    cid: Option<String>,
-}
 // an endpoint for relaying an ipfs query
 // TODO: Investigate caching
 #[get("/ipfs")]

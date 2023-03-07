@@ -2,8 +2,10 @@
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::schema::{projects, rounds, voting_strategies, round_meta_ptrs, round_projects_meta_ptrs, project_meta_ptrs, qf_votes};
-
+use crate::schema::{
+    project_meta_ptrs, projects, qf_votes, round_meta_ptrs, round_projects_meta_ptrs, rounds,
+    voting_strategies,
+};
 
 #[derive(Clone, Insertable, Queryable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = voting_strategies)]
@@ -26,7 +28,6 @@ pub struct RoundMetaPtrItem {
     pub chainId: String,
 }
 
-
 #[derive(Clone, Insertable, Queryable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = round_projects_meta_ptrs)]
 pub struct RoundProjectsMetaPtrItem {
@@ -36,8 +37,6 @@ pub struct RoundProjectsMetaPtrItem {
     pub roundId: String,
     pub chainId: String,
 }
-
-
 
 #[derive(Clone, Insertable, Queryable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = rounds)]
@@ -77,7 +76,6 @@ pub struct ProjectItem {
     pub roundId: String,
 }
 
-
 #[derive(Clone, Insertable, Queryable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = qf_votes)]
 pub struct QfVoteItem {
@@ -93,3 +91,99 @@ pub struct QfVoteItem {
     pub roundId: String,
 }
 
+#[derive(Deserialize, Debug, Clone)]
+pub struct RoundsDerivedQuery<T> {
+    pub rounds: Vec<T>,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct VotingStrategyDerivedQuery<T> {
+    pub votingStrategies: Vec<T>,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct RoundProjectsDerivedQuery<T> {
+    pub roundProjects: Vec<T>,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct QfVotesDerivedQuery<T> {
+    pub qfvotes: Vec<T>,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct DerivedRoundId {
+    pub id: String,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct QfVotesDerivedVotingStrategy {
+    pub round: Option<DerivedRoundId>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Round {
+    pub id: String,
+    pub payoutStrategy: String,
+    pub roundEndTime: String,
+    pub roundStartTime: String,
+    pub token: String,
+    pub updatedAt: String,
+    pub createdAt: String,
+    pub applicationsStartTime: String,
+    pub applicationsEndTime: String,
+    pub chainId: Option<u16>,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct Project {
+    pub id: String,
+    pub project: String,
+    pub payoutAddress: Option<String>,
+    pub createdAt: String,
+    pub updatedAt: String,
+    pub round: DerivedRoundId,
+    pub chainId: Option<u16>,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct QfVote {
+    pub id: String,
+    pub version: String,
+    pub token: String,
+    pub from: String,
+    pub to: String,
+    pub amount: String,
+    pub projectId: String,
+    pub createdAt: String,
+    pub votingStrategy: QfVotesDerivedVotingStrategy,
+    pub chainId: Option<u16>,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct VotingStrategy {
+    pub id: String,
+    pub strategyAddress: String,
+    pub strategyName: String,
+    pub version: String,
+    pub round: Option<DerivedRoundId>,
+    pub chainId: Option<u16>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct MetaPtr {
+    pub id: String,
+    pub pointer: String,
+    pub protocol: u16,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct RoundMetaPtr {
+    pub id: String,
+    pub roundMetaPtr: MetaPtr,
+    pub chainId: Option<u16>,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct ProjectMetaPtr {
+    pub id: String,
+    pub metaPtr: MetaPtr,
+    pub round: DerivedRoundId,
+    pub chainId: Option<u16>,
+}
+#[derive(Deserialize, Debug, Clone)]
+pub struct RoundProjectsMetaPtr {
+    pub id: String,
+    pub projectsMetaPtr: MetaPtr,
+    pub chainId: Option<u16>,
+}

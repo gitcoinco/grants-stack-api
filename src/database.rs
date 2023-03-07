@@ -1,9 +1,16 @@
 use diesel::{PgConnection, QueryDsl, RunQueryDsl};
 
-use crate::models::{VotingStrategyItem, RoundMetaPtrItem, RoundProjectsMetaPtrItem, RoundItem, ProjectMetaPtrItem, ProjectItem, QfVoteItem};
-use crate::schema::{projects, rounds, voting_strategies, round_meta_ptrs, round_projects_meta_ptrs, project_meta_ptrs, qf_votes};
-use crate::utils::{VotingStrategy, self, RoundMetaPtr, RoundProjectsMetaPtr, Round1, ProjectMetaPtr, Project, QfVote};
 use diesel::ExpressionMethods;
+
+use crate::models::{
+    DerivedRoundId, Project, ProjectItem, ProjectMetaPtr, ProjectMetaPtrItem, QfVote, QfVoteItem,
+    Round, RoundItem, RoundMetaPtr, RoundMetaPtrItem, RoundProjectsMetaPtr,
+    RoundProjectsMetaPtrItem, VotingStrategy, VotingStrategyItem,
+};
+use crate::schema::{
+    project_meta_ptrs, projects, qf_votes, round_meta_ptrs, round_projects_meta_ptrs, rounds,
+    voting_strategies,
+};
 
 pub fn insert_round_meta_ptrs(conn: &mut PgConnection, data: Vec<RoundMetaPtrItem>) {
     diesel::insert_into(round_meta_ptrs::table)
@@ -13,7 +20,6 @@ pub fn insert_round_meta_ptrs(conn: &mut PgConnection, data: Vec<RoundMetaPtrIte
 }
 
 pub fn new_round_meta_ptrs(conn: &mut PgConnection, data: Vec<RoundMetaPtr>) {
-
     let mut round_meta_ptrs_arr: Vec<RoundMetaPtrItem> = Vec::new();
     for round_meta_ptr in data {
         let round_meta_ptr_item = RoundMetaPtrItem {
@@ -30,29 +36,29 @@ pub fn new_round_meta_ptrs(conn: &mut PgConnection, data: Vec<RoundMetaPtr>) {
     insert_round_meta_ptrs(conn, round_meta_ptrs_arr);
 }
 
-
-pub  fn insert_voting_strategies(conn: &mut PgConnection, data: Vec<VotingStrategyItem>) {
+pub fn insert_voting_strategies(conn: &mut PgConnection, data: Vec<VotingStrategyItem>) {
     diesel::insert_into(voting_strategies::table)
         .values(&data)
         .execute(conn)
         .expect("Error saving new voting strategy");
 }
 
-pub  fn new_voting_strategies(conn: &mut PgConnection, data: Vec<VotingStrategy>) {
-
+pub fn new_voting_strategies(conn: &mut PgConnection, data: Vec<VotingStrategy>) {
     let mut voting_strategies: Vec<VotingStrategyItem> = Vec::new();
     for strategy in data {
         let voting_strategy_item = VotingStrategyItem {
-            id: strategy.id, 
+            id: strategy.id,
             strategyAddress: strategy.strategyAddress,
             strategyName: strategy.strategyName,
             version: strategy.version,
             chainId: strategy.chainId.unwrap_or_else(|| 99).to_string(),
-            roundId: strategy.round.unwrap_or_else(|| utils::DerivedRoundId { id: "".to_string() }).id,
+            roundId: strategy
+                .round
+                .unwrap_or_else(|| DerivedRoundId { id: "".to_string() })
+                .id,
         };
 
         voting_strategies.push(voting_strategy_item);
-
     }
 
     let chunk_size = 1000;
@@ -65,10 +71,12 @@ pub  fn new_voting_strategies(conn: &mut PgConnection, data: Vec<VotingStrategy>
     }
 
     insert_voting_strategies(conn, voting_strategies_data);
-
 }
 
-pub fn insert_round_projects_meta_ptrs(conn: &mut PgConnection, data: Vec<RoundProjectsMetaPtrItem>) {
+pub fn insert_round_projects_meta_ptrs(
+    conn: &mut PgConnection,
+    data: Vec<RoundProjectsMetaPtrItem>,
+) {
     diesel::insert_into(round_projects_meta_ptrs::table)
         .values(&data)
         .execute(conn)
@@ -76,7 +84,6 @@ pub fn insert_round_projects_meta_ptrs(conn: &mut PgConnection, data: Vec<RoundP
 }
 
 pub fn new_round_projects_meta_ptrs(conn: &mut PgConnection, data: Vec<RoundProjectsMetaPtr>) {
-
     let mut round_projects_meta_ptrs: Vec<RoundProjectsMetaPtrItem> = Vec::new();
     for round_projects_meta_ptr in data {
         let round_projects_meta_ptr_item = RoundProjectsMetaPtrItem {
@@ -84,7 +91,10 @@ pub fn new_round_projects_meta_ptrs(conn: &mut PgConnection, data: Vec<RoundProj
             protocol: round_projects_meta_ptr.projectsMetaPtr.protocol.to_string(),
             pointer: round_projects_meta_ptr.projectsMetaPtr.pointer,
             roundId: round_projects_meta_ptr.id,
-            chainId: round_projects_meta_ptr.chainId.unwrap_or_default().to_string(),
+            chainId: round_projects_meta_ptr
+                .chainId
+                .unwrap_or_default()
+                .to_string(),
         };
 
         round_projects_meta_ptrs.push(round_projects_meta_ptr_item);
@@ -109,8 +119,7 @@ pub fn insert_rounds(conn: &mut PgConnection, data: Vec<RoundItem>) {
         .expect("Error saving new round");
 }
 
-pub fn new_rounds(conn: &mut PgConnection, data: Vec<Round1>) {
-
+pub fn new_rounds(conn: &mut PgConnection, data: Vec<Round>) {
     let mut round_items: Vec<RoundItem> = Vec::new();
     for round in data {
         let round_item = RoundItem {
@@ -127,7 +136,6 @@ pub fn new_rounds(conn: &mut PgConnection, data: Vec<Round1>) {
         };
 
         round_items.push(round_item);
-
     }
 
     let chunk_size = 1000;
@@ -140,7 +148,6 @@ pub fn new_rounds(conn: &mut PgConnection, data: Vec<Round1>) {
     }
 
     insert_rounds(conn, rounds_data);
-
 }
 
 pub fn insert_project_meta_ptrs1(conn: &mut PgConnection, data: Vec<ProjectMetaPtrItem>) {
@@ -151,7 +158,6 @@ pub fn insert_project_meta_ptrs1(conn: &mut PgConnection, data: Vec<ProjectMetaP
 }
 
 pub fn new_project_meta_ptrs(conn: &mut PgConnection, data: Vec<ProjectMetaPtr>) {
-
     let mut project_meta_ptrs: Vec<ProjectMetaPtrItem> = Vec::new();
     for project_meta_ptr in data {
         let project_id = project_meta_ptr.id.split("-").collect::<Vec<&str>>()[0].to_string();
@@ -187,7 +193,6 @@ pub fn insert_projects(conn: &mut PgConnection, data: Vec<ProjectItem>) {
 }
 
 pub fn new_projects(conn: &mut PgConnection, data: Vec<Project>) {
-
     let mut project_items: Vec<ProjectItem> = Vec::new();
     for project2 in data {
         let project_item = ProjectItem {
@@ -201,7 +206,6 @@ pub fn new_projects(conn: &mut PgConnection, data: Vec<Project>) {
         };
 
         project_items.push(project_item);
-
     }
 
     let chunk_size = 1000;
@@ -214,7 +218,6 @@ pub fn new_projects(conn: &mut PgConnection, data: Vec<Project>) {
     }
 
     insert_projects(conn, projects_data);
-
 }
 
 pub fn insert_qf_votes(conn: &mut PgConnection, data: Vec<QfVoteItem>) {
@@ -227,8 +230,6 @@ pub fn insert_qf_votes(conn: &mut PgConnection, data: Vec<QfVoteItem>) {
 }
 
 pub fn new_qf_votes(conn: &mut PgConnection, data: Vec<QfVote>) {
-
-    
     let mut qf_votes: Vec<QfVoteItem> = Vec::new();
     for qf_vote in data {
         let qf_vote_item = QfVoteItem {
@@ -240,13 +241,17 @@ pub fn new_qf_votes(conn: &mut PgConnection, data: Vec<QfVote>) {
             token: qf_vote.token,
             version: qf_vote.version,
             createdAt: qf_vote.createdAt,
-            roundId: qf_vote.votingStrategy.round.unwrap_or_else(|| utils::QfVotesDerivedRoundId { id: "".to_string() }).id,
+            roundId: qf_vote
+                .votingStrategy
+                .round
+                .unwrap_or_else(|| DerivedRoundId { id: "".to_string() })
+                .id,
             chainId: qf_vote.chainId.unwrap_or_default().to_string(),
         };
-        
+
         qf_votes.push(qf_vote_item);
     }
-    
+
     let chunk_size = 1000;
 
     let mut qf_votes_data = qf_votes;
@@ -262,7 +267,10 @@ pub fn new_qf_votes(conn: &mut PgConnection, data: Vec<QfVote>) {
     // insert_qf_votes1(conn, qf_votes);
 }
 
-pub async fn get_round_meta_ptr(conn: &mut PgConnection, round_id: String) -> Vec<RoundMetaPtrItem> {
+pub async fn get_round_meta_ptr(
+    conn: &mut PgConnection,
+    round_id: String,
+) -> Vec<RoundMetaPtrItem> {
     use crate::schema::round_meta_ptrs::dsl::*;
 
     let round_meta_ptr = round_meta_ptrs
@@ -273,7 +281,10 @@ pub async fn get_round_meta_ptr(conn: &mut PgConnection, round_id: String) -> Ve
     round_meta_ptr
 }
 
-pub async fn get_round_projects_meta_ptr(conn: &mut PgConnection, round_id: String) -> Vec<RoundProjectsMetaPtrItem> {
+pub async fn get_round_projects_meta_ptr(
+    conn: &mut PgConnection,
+    round_id: String,
+) -> Vec<RoundProjectsMetaPtrItem> {
     use crate::schema::round_projects_meta_ptrs::dsl::*;
 
     let round_projects_meta_ptr = round_projects_meta_ptrs
@@ -295,7 +306,10 @@ pub async fn get_round_data(conn: &mut PgConnection, round_id: String) -> Vec<Ro
     round
 }
 
-pub async fn get_round_voting_strategy(conn: &mut PgConnection, round_id: String) -> Vec<VotingStrategyItem> {
+pub async fn get_round_voting_strategy(
+    conn: &mut PgConnection,
+    round_id: String,
+) -> Vec<VotingStrategyItem> {
     use crate::schema::voting_strategies::dsl::*;
 
     let round_voting_strategy = voting_strategies
@@ -339,7 +353,10 @@ pub async fn get_project_data(conn: &mut PgConnection, project_id: String) -> Ve
     project_data
 }
 
-pub async fn get_project_meta_ptr(conn: &mut PgConnection, project_id: String) -> Vec<ProjectMetaPtrItem> {
+pub async fn get_project_meta_ptr(
+    conn: &mut PgConnection,
+    project_id: String,
+) -> Vec<ProjectMetaPtrItem> {
     use crate::schema::project_meta_ptrs::dsl::*;
 
     let project_meta_ptr = project_meta_ptrs
