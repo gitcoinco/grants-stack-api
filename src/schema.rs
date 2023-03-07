@@ -119,20 +119,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    votes (id) {
-        id -> Text,
-        createdAt -> Text,
-        amount -> Text,
-        from -> Text,
-        to -> Text,
-        token -> Text,
-        version -> Text,
-        projectId -> Nullable<Text>,
-        chainId -> Nullable<Text>,
-    }
-}
-
-diesel::table! {
     voting_strategies (id) {
         id -> Text,
         strategyAddress -> Text,
@@ -154,6 +140,5 @@ diesel::allow_tables_to_appear_in_same_query!(
     round_meta_ptrs,
     round_projects_meta_ptrs,
     rounds,
-    votes,
     voting_strategies,
 );

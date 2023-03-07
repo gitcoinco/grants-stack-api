@@ -28,18 +28,6 @@ CREATE TABLE projects (
     "roundId" TEXT NOT NULL,
     CONSTRAINT "projects_pkey" PRIMARY KEY ("id")
 );
-CREATE TABLE votes (
-    "id" TEXT NOT NULL,
-    "createdAt" TEXT NOT NULL,
-    "amount" TEXT NOT NULL,
-    "from" TEXT NOT NULL,
-    "to" TEXT NOT NULL,
-    "token" TEXT NOT NULL,
-    "version" TEXT NOT NULL,
-    "projectId" TEXT,
-    "chainId" TEXT,
-    CONSTRAINT "votes_pkey" PRIMARY KEY ("id")
-);
 CREATE TABLE project_matches (
     "id" SERIAL NOT NULL,
     "createdAt" TEXT NOT NULL,
