@@ -25,7 +25,7 @@ pub struct ProgramsQuery {
 pub struct Project {
     pub id: String,
     pub payoutAddress: Option<String>,
-    pub project: String,
+    pub projectId: String,
     pub createdAt: String,
     pub updatedAt: String,
     pub chainId: Option<String>,
@@ -167,6 +167,7 @@ pub struct ProjectMetaPtrItem {
     pub protocol: String,
     pub pointer: String,
     pub roundId: String,
+    pub projectId: String,
     pub chainId: String,
 }
 
@@ -175,7 +176,7 @@ pub struct ProjectMetaPtrItem {
 pub struct ProjectItem {
     pub id: String,
     pub payoutAddress: Option<String>,
-    pub project: String,
+    pub projectId: String,
     pub createdAt: String,
     pub updatedAt: String,
     pub chainId: String,

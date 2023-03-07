@@ -251,6 +251,7 @@ pub async fn r_query_round_projects(gql: &Client, last_id: &str, chain_id: u16) 
 // query: 
 // {
 //     roundProjects {
+//       id
 //       round {
 //         id
 //       }

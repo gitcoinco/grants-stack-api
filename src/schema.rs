@@ -23,10 +23,11 @@ diesel::table! {
 diesel::table! {
     project_meta_ptrs (id) {
         id -> Text,
-        protocol -> Nullable<Text>,
-        pointer -> Nullable<Text>,
-        roundId -> Nullable<Text>,
-        chainId -> Nullable<Text>,
+        protocol -> Text,
+        pointer -> Text,
+        roundId -> Text,
+        projectId -> Text,
+        chainId -> Text,
     }
 }
 
@@ -48,7 +49,7 @@ diesel::table! {
     projects (id) {
         id -> Text,
         payoutAddress -> Nullable<Text>,
-        project -> Text,
+        projectId -> Text,
         createdAt -> Text,
         updatedAt -> Text,
         chainId -> Text,

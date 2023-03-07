@@ -21,7 +21,7 @@ CREATE TABLE rounds (
 CREATE TABLE projects (
     "id" TEXT NOT NULL,
     "payoutAddress" TEXT,
-    "project" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
     "createdAt" TEXT NOT NULL,
     "updatedAt" TEXT NOT NULL,
     "chainId" TEXT NOT NULL,
@@ -105,10 +105,11 @@ CREATE TABLE round_projects_meta_ptrs (
 
 CREATE TABLE project_meta_ptrs (
     "id" TEXT NOT NULL,
-    "protocol" TEXT,
-    "pointer" TEXT,
-    "roundId" TEXT,
-    "chainId" TEXT,
+    "protocol" TEXT NOT NULL,
+    "pointer" TEXT NOT NULL,
+    "roundId" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "chainId" TEXT NOT NULL,
 
     CONSTRAINT "project_meta_ptrs_pkey" PRIMARY KEY ("id")
 ); 

@@ -277,7 +277,16 @@ pub fn new_round_projects_meta_ptrs(conn: &mut PgConnection, data: Vec<RoundProj
         round_projects_meta_ptrs.push(round_projects_meta_ptr_item);
     }
 
-    insert_round_projects_meta_ptrs(conn, round_projects_meta_ptrs);
+    let chunk_size = 1000;
+    let mut round_projects_meta_ptrs_data = round_projects_meta_ptrs;
+
+    while round_projects_meta_ptrs_data.len() > chunk_size {
+        let (chunk, rest) = round_projects_meta_ptrs_data.split_at(chunk_size);
+        insert_round_projects_meta_ptrs(conn, chunk.to_vec());
+        round_projects_meta_ptrs_data = rest.to_vec()
+    }
+
+    insert_round_projects_meta_ptrs(conn, round_projects_meta_ptrs_data);
 }
 
 pub fn insert_rounds1(conn: &mut PgConnection, data: Vec<RoundItem>) {
@@ -332,18 +341,29 @@ pub fn new_project_meta_ptrs1(conn: &mut PgConnection, data: Vec<ProjectMetaPtr>
 
     let mut project_meta_ptrs: Vec<ProjectMetaPtrItem> = Vec::new();
     for project_meta_ptr in data {
+        let project_id = project_meta_ptr.id.split("-").collect::<Vec<&str>>()[0].to_string();
         let project_meta_ptr_item = ProjectMetaPtrItem {
             id: project_meta_ptr.id,
             protocol: project_meta_ptr.metaPtr.protocol.to_string(),
             pointer: project_meta_ptr.metaPtr.pointer,
             roundId: project_meta_ptr.round.id,
+            projectId: project_id,
             chainId: project_meta_ptr.chainId.unwrap_or_default().to_string(),
         };
 
         project_meta_ptrs.push(project_meta_ptr_item);
     }
 
-    insert_project_meta_ptrs1(conn, project_meta_ptrs);
+    let chunk_size = 1000;
+    let mut project_meta_ptrs_data = project_meta_ptrs;
+
+    while project_meta_ptrs_data.len() > chunk_size {
+        let (chunk, rest) = project_meta_ptrs_data.split_at(chunk_size);
+        insert_project_meta_ptrs1(conn, chunk.to_vec());
+        project_meta_ptrs_data = rest.to_vec()
+    }
+
+    insert_project_meta_ptrs1(conn, project_meta_ptrs_data);
 }
 
 pub fn insert_projects1(conn: &mut PgConnection, data: Vec<ProjectItem>) {
@@ -360,7 +380,7 @@ pub fn new_projects1(conn: &mut PgConnection, data: Vec<Project2>) {
         let project_item = ProjectItem {
             id: project2.id,
             payoutAddress: project2.payoutAddress,
-            project: project2.project,
+            projectId: project2.project,
             createdAt: project2.createdAt,
             updatedAt: project2.updatedAt,
             chainId: project2.chainId.unwrap().to_string(),
@@ -387,12 +407,15 @@ pub fn new_projects1(conn: &mut PgConnection, data: Vec<Project2>) {
 pub fn insert_qf_votes1(conn: &mut PgConnection, data: Vec<QfVoteItem>) {
     diesel::insert_into(qf_votes::table)
         .values(&data)
+        .on_conflict(qf_votes::id)
+        .do_nothing()
         .execute(conn)
         .expect("Error saving new qf vote");
 }
 
 pub fn new_qf_votes1(conn: &mut PgConnection, data: Vec<QfVote>) {
 
+    
     let mut qf_votes: Vec<QfVoteItem> = Vec::new();
     for qf_vote in data {
         let qf_vote_item = QfVoteItem {
@@ -407,11 +430,23 @@ pub fn new_qf_votes1(conn: &mut PgConnection, data: Vec<QfVote>) {
             roundId: qf_vote.votingStrategy.round.unwrap_or_else(|| utils::QfVotesDerivedRoundId { id: "".to_string() }).id,
             chainId: qf_vote.chainId.unwrap_or_default().to_string(),
         };
-
+        
         qf_votes.push(qf_vote_item);
     }
+    
+    let chunk_size = 1000;
 
-    insert_qf_votes1(conn, qf_votes);
+    let mut qf_votes_data = qf_votes;
+
+    while qf_votes_data.len() > chunk_size {
+        let (chunk, rest) = qf_votes_data.split_at(chunk_size);
+        insert_qf_votes1(conn, chunk.to_vec());
+        qf_votes_data = rest.to_vec()
+    }
+
+    insert_qf_votes1(conn, qf_votes_data);
+
+    // insert_qf_votes1(conn, qf_votes);
 }
 
 pub async fn get_round_meta_ptr(conn: &mut PgConnection, round_id: String) -> Vec<RoundMetaPtrItem> {
@@ -478,4 +513,37 @@ pub async fn get_round_votes(conn: &mut PgConnection, round_id: String) -> Vec<Q
         .expect("Error loading round qf votes");
 
     round_qf_votes
+}
+
+pub async fn get_project_data(conn: &mut PgConnection, project_id: String) -> Vec<ProjectItem> {
+    use crate::schema::projects::dsl::*;
+
+    let project_data = projects
+        .filter(projectId.eq(project_id))
+        .load::<ProjectItem>(conn)
+        .expect("Error loading project");
+
+    project_data
+}
+
+pub async fn get_project_meta_ptr(conn: &mut PgConnection, project_id: String) -> Vec<ProjectMetaPtrItem> {
+    use crate::schema::project_meta_ptrs::dsl::*;
+
+    let project_meta_ptr = project_meta_ptrs
+        .filter(projectId.eq(project_id))
+        .load::<ProjectMetaPtrItem>(conn)
+        .expect("Error loading project meta ptr");
+
+    project_meta_ptr
+}
+
+pub async fn get_project_votes(conn: &mut PgConnection, project_id: String) -> Vec<QfVoteItem> {
+    use crate::schema::qf_votes::dsl::*;
+
+    let project_qf_votes = qf_votes
+        .filter(projectId.eq(project_id))
+        .load::<QfVoteItem>(conn)
+        .expect("Error loading project qf votes");
+
+    project_qf_votes
 }
