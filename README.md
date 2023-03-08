@@ -64,6 +64,7 @@ This endpoint fetches project data from the database. It accepts a query paramet
 - `data`: Include project data in the response.
 - `project_meta_ptr`: Include project metadata pointer in the response.
 - `project_votes`: Include project votes data in the response.
+- `project_summary`: Include project summary data in the response.
 
 #### `GET /ipfs`
 
