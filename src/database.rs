@@ -11,6 +11,8 @@ use crate::schema::{
     project_meta_ptrs, projects, qf_votes, round_meta_ptrs, round_projects_meta_ptrs, rounds,
     voting_strategies,
 };
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
 pub fn insert_round_meta_ptrs(conn: &mut PgConnection, data: Vec<RoundMetaPtrItem>) {
     diesel::insert_into(round_meta_ptrs::table)
@@ -376,4 +378,12 @@ pub async fn get_project_votes(conn: &mut PgConnection, project_id: String) -> V
         .expect("Error loading project qf votes");
 
     project_qf_votes
+}
+
+pub fn run_migrations(
+    connection: &mut PgConnection,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    connection.run_pending_migrations(MIGRATIONS)?;
+
+    Ok(())
 }

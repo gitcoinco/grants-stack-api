@@ -1,6 +1,7 @@
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use grants_stack_api::{
-    database,
+    database::{self, run_migrations},
+    error::Result,
     models::{
         ProjectItem, ProjectMetaPtrItem, QfVoteItem, RoundItem, RoundMetaPtrItem,
         RoundProjectsMetaPtrItem, VotingStrategyItem,
@@ -49,18 +50,45 @@ struct GetIPFSQueryParams {
 }
 
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    println!("starting server ...");
-    HttpServer::new(|| {
-        App::new()
-            .service(seed_handler)
-            .service(get_round_handler)
-            .service(get_project_handler)
-            .service(get_ipfs_handler)
-    })
-    .bind(("0.0.0.0", 8080))?
-    .run()
-    .await
+async fn main() -> Result<()> {
+    let args: Vec<String> = std::env::args().collect();
+    let command = args.get(1).map(String::as_str);
+
+    match command {
+        Some("serve") | None => {
+            let port = 8080;
+            println!("Starting server on :{} ...", port);
+
+            HttpServer::new(|| {
+                App::new()
+                    .service(seed_handler)
+                    .service(get_round_handler)
+                    .service(get_project_handler)
+                    .service(get_ipfs_handler)
+            })
+            .bind(("0.0.0.0", port))?
+            .run()
+            .await?;
+        }
+        Some("migrate") => {
+            println!("Migrating database ...");
+            match utils::establish_pg_connection() {
+                Err(err) => {
+                    eprintln!("Failed to establish connection to the database!");
+                    eprintln!("{}", err);
+                }
+                Ok(mut conn) => {
+                    run_migrations(&mut conn)?;
+                    println!("OK!");
+                }
+            }
+        }
+        Some(_) => {
+            println!("Unknown command. Exiting.");
+        }
+    }
+
+    return Ok(());
 }
 
 // an endpoint to trigger seeding

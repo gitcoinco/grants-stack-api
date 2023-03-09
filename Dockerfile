@@ -1,3 +1,12 @@
+# Postgres cluster black-mountain-5617-db created
+#   Username:    postgres
+#   Password:    80AvajxWQRCypvN
+#   Hostname:    black-mountain-5617-db.internal
+#   Flycast:     fdaa:1:98e0:0:1::2
+#   Proxy port:  5432
+#   Postgres port:  5433
+
+
 ## First stage: Build the application
 FROM rust:latest as builder
 # create a new empty shell project
@@ -33,4 +42,4 @@ WORKDIR ${APP}
 # expose the port
 EXPOSE 8080
 # run the binary
-CMD ["./grants-stack-api"]
+CMD [ "sh", "-c", "./grants-stack-api migrate && ./grants-stack-api serve" ]
