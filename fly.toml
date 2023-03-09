@@ -1,6 +1,6 @@
-# fly.toml file generated for black-mountain-5617 on 2023-03-09T17:53:39+01:00
+# fly.toml file generated for grants-stack-api on 2023-03-09T19:29:55+01:00
 
-app = "black-mountain-5617"
+app = "grants-stack-api"
 kill_signal = "SIGINT"
 kill_timeout = 5
 primary_region = "mad"
