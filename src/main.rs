@@ -10,10 +10,11 @@ async fn main() -> std::io::Result<()> {
             .service(get_round_handler)
             .service(get_project_handler)
             .service(get_ipfs_handler)
+            .service(health_check_handler)
     })
-    .bind(("0.0.0.0", 8080))?
-    .run()
-    .await
+        .bind(("0.0.0.0", 8080))?
+        .run()
+        .await
 }
 
 // an endpoint to trigger seeding
@@ -166,5 +167,16 @@ async fn get_ipfs_handler(query: web::Query<models::GetIPFSQueryParams>) -> impl
         HttpResponse::Ok().json(ipfs_data)
     } else {
         HttpResponse::Ok().body("No")
+    }
+}
+
+/// Health check endpoint
+/// Contacts the database and resolves to 200 if db can be reached,
+/// 502 if database is not reached
+#[get("/health")]
+async fn health_check_handler() -> impl Responder {
+    match utils::establish_pg_connection() {
+        Ok(_) => HttpResponse::Ok().json("healthy!"),
+        Err(e) => HttpResponse::BadGateway().body(e.to_string()),
     }
 }
