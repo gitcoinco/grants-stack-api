@@ -264,7 +264,6 @@ pub fn new_qf_votes(conn: &mut PgConnection, data: Vec<QfVote>) {
 
     insert_qf_votes(conn, qf_votes_data);
 
-    // insert_qf_votes1(conn, qf_votes);
 }
 
 pub async fn get_round_meta_ptr(

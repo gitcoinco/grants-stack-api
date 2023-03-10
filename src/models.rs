@@ -6,6 +6,7 @@ use crate::schema::{
     project_meta_ptrs, projects, qf_votes, round_meta_ptrs, round_projects_meta_ptrs, rounds,
     voting_strategies,
 };
+use ethers::types::U256;
 
 #[derive(Clone, Insertable, Queryable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = voting_strategies)]
@@ -186,4 +187,62 @@ pub struct RoundProjectsMetaPtr {
     pub id: String,
     pub projectsMetaPtr: MetaPtr,
     pub chainId: Option<u16>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct TokenVote {
+    pub amount: U256,
+    pub token: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct ProjectSummary {
+    pub project_id: String,
+    pub round_id: String,
+    pub vote_count: i64,
+    pub unique_voter_count: i64,
+    pub vote_token_sum: Vec<TokenVote>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct ProjectResponseData {
+    pub data: Option<ProjectItem>,
+    pub project_meta_ptr: Option<ProjectMetaPtrItem>,
+    pub project_votes: Option<Vec<QfVoteItem>>,
+    pub project_summary: Option<ProjectSummary>,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct GetProjectDataQueryParams {
+    pub project_id: String,
+    pub data: Option<bool>,
+    pub project_meta_ptr: Option<bool>,
+    pub project_votes: Option<bool>,
+    pub project_summary: Option<bool>,
+}
+
+#[derive(Clone, Deserialize, Debug)]
+pub struct GetRoundDataQueryParams {
+    pub round_id: String,
+    pub data: Option<bool>,
+    pub round_meta_ptr: Option<bool>,
+    pub voting_strategy: Option<bool>,
+    pub projects_meta_ptr: Option<bool>,
+    pub round_projects: Option<bool>,
+    pub round_votes: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct RoundResponseData {
+    pub data: Option<RoundItem>,
+    pub round_meta_ptr: Option<RoundMetaPtrItem>,
+    pub voting_strategy: Option<VotingStrategyItem>,
+    pub projects_meta_ptr: Option<RoundProjectsMetaPtrItem>,
+    pub round_projects: Option<Vec<ProjectItem>>,
+    pub round_votes: Option<Vec<QfVoteItem>>,
+}
+
+#[derive(Deserialize)]
+pub struct GetIPFSQueryParams {
+    pub cid: Option<String>,
 }

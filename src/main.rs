@@ -1,54 +1,5 @@
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
-use grants_stack_api::{
-    database,
-    models::{
-        ProjectItem, ProjectMetaPtrItem, QfVoteItem, RoundItem, RoundMetaPtrItem,
-        RoundProjectsMetaPtrItem, VotingStrategyItem,
-    },
-    seed, utils,
-};
-use serde::{Deserialize, Serialize};
-
-#[derive(Clone, Deserialize, Debug)]
-struct GetRoundDataQueryParams {
-    round_id: String,
-    data: Option<bool>,
-    round_meta_ptr: Option<bool>,
-    voting_strategy: Option<bool>,
-    projects_meta_ptr: Option<bool>,
-    round_projects: Option<bool>,
-    round_votes: Option<bool>,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-struct RoundResponseData {
-    data: Option<RoundItem>,
-    round_meta_ptr: Option<RoundMetaPtrItem>,
-    voting_strategy: Option<VotingStrategyItem>,
-    projects_meta_ptr: Option<RoundProjectsMetaPtrItem>,
-    round_projects: Option<Vec<ProjectItem>>,
-    round_votes: Option<Vec<QfVoteItem>>,
-}
-
-#[derive(Clone, Deserialize)]
-struct GetProjectDataQueryParams {
-    project_id: String,
-    data: Option<bool>,
-    project_meta_ptr: Option<bool>,
-    project_votes: Option<bool>,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-struct ProjectResponseData {
-    data: Option<ProjectItem>,
-    project_meta_ptr: Option<ProjectMetaPtrItem>,
-    project_votes: Option<Vec<QfVoteItem>>,
-}
-
-#[derive(Deserialize)]
-struct GetIPFSQueryParams {
-    cid: Option<String>,
-}
+use grants_stack_api::{database, models, seed, utils};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -83,8 +34,8 @@ async fn seed_handler(chain_id: web::Path<u16>) -> impl Responder {
 // use ?round_id=0x01...&{data, round_meta_ptr, voting_strategy, round_projects_meta_ptr, round_projects, qf_votes}=true/false
 // multiple params can be used at once
 #[get("/round")]
-async fn get_round_handler(query: web::Query<GetRoundDataQueryParams>) -> impl Responder {
-    let mut res_data = RoundResponseData {
+async fn get_round_handler(query: web::Query<models::GetRoundDataQueryParams>) -> impl Responder {
+    let mut res_data = models::RoundResponseData {
         data: None,
         round_meta_ptr: None,
         voting_strategy: None,
@@ -156,11 +107,14 @@ async fn get_round_handler(query: web::Query<GetRoundDataQueryParams>) -> impl R
 // use ?project_id=0x01...&{data, project_meta_ptr, project_votes}=true/false
 // multiple params can be used at the same time
 #[get("/project")]
-async fn get_project_handler(query: web::Query<GetProjectDataQueryParams>) -> impl Responder {
-    let mut res_data = ProjectResponseData {
+async fn get_project_handler(
+    query: web::Query<models::GetProjectDataQueryParams>,
+) -> impl Responder {
+    let mut res_data = models::ProjectResponseData {
         data: None,
         project_meta_ptr: None,
         project_votes: None,
+        project_summary: None,
     };
 
     let pg = &mut utils::establish_pg_connection().unwrap();
@@ -194,13 +148,19 @@ async fn get_project_handler(query: web::Query<GetProjectDataQueryParams>) -> im
         }
     }
 
+    if query.project_summary.unwrap_or(false) {
+        let project_summary = utils::summarize_project(pg, project_id.to_string()).await;
+        res_data.project_summary = Some(project_summary);
+        // TODO: check if empty
+    }
+
     HttpResponse::Ok().json(res_data)
 }
 
 // an endpoint for relaying an ipfs query
 // TODO: Investigate caching
 #[get("/ipfs")]
-async fn get_ipfs_handler(query: web::Query<GetIPFSQueryParams>) -> impl Responder {
+async fn get_ipfs_handler(query: web::Query<models::GetIPFSQueryParams>) -> impl Responder {
     let cid = query.cid.clone();
     if cid.is_some() {
         let ipfs_data = utils::fetch_from_ipfs(&cid.unwrap()).await.unwrap();
