@@ -9,8 +9,8 @@ use crate::{
     database,
     models::{
         self, Project, ProjectMetaPtr, ProjectSummary, QfVote, QfVotesDerivedQuery, Round,
-        RoundMetaPtr, RoundProjectsDerivedQuery, RoundProjectsMetaPtr, RoundsDerivedQuery,
-        TokenVote, VotingStrategy, VotingStrategyDerivedQuery,
+        RoundMetaPtr, RoundProjectsDerivedQuery, RoundProjectsMetaPtr, RoundSummary,
+        RoundsDerivedQuery, TokenVote, VotingStrategy, VotingStrategyDerivedQuery,
     },
 };
 
@@ -408,6 +408,59 @@ pub async fn summarize_project(
 
     let summary: ProjectSummary = ProjectSummary {
         project_id: project_id,
+        round_id: round_id,
+        vote_count: vote_count,
+        unique_voter_count: unique_voter_count,
+        vote_token_sum: token_votes,
+    };
+    summary
+}
+
+pub async fn summarize_round(conn: &mut PgConnection, round_id: String) -> models::RoundSummary {
+    // get round data and votes from db
+    let round_votes = database::get_round_votes(conn, round_id.clone()).await;
+
+    // count the number of votes for the round
+    let vote_count = round_votes.len() as i64;
+
+    // coerce vote token and amount to TokenVote type
+    // (converting the amount to U256 for math operations)
+    let mut token_votes: Vec<TokenVote> = Vec::new();
+    for vote in round_votes.clone() {
+        let token_vote = TokenVote {
+            token: vote.token,
+            amount: U256::from_dec_str(vote.amount.as_str()).unwrap(),
+        };
+        token_votes.push(token_vote);
+    }
+
+    // sum the votes for unique token
+    let mut token_vote_map: HashMap<String, U256> = HashMap::new();
+    for vote in token_votes {
+        let token = vote.token;
+        let amount = vote.amount;
+        let current_amount = token_vote_map.entry(token).or_insert(U256::from(0));
+        *current_amount += amount;
+    }
+
+    // convert token_vote_map to TokenVote type
+    let mut token_votes: Vec<TokenVote> = Vec::new();
+    for (token, amount) in token_vote_map {
+        let token_vote = TokenVote { token, amount };
+        token_votes.push(token_vote);
+    }
+
+    // count the number of unique vote from address
+    // we use a hashmap here for future use cases where we want to count the number of votes for a specific address
+    let mut address_vote_map: HashMap<String, i64> = HashMap::new();
+    for vote in round_votes {
+        let address = vote.from;
+        let current_count = address_vote_map.entry(address).or_insert(0);
+        *current_count += 1;
+    }
+    let unique_voter_count = address_vote_map.len() as i64;
+
+    let summary: RoundSummary = RoundSummary {
         round_id: round_id,
         vote_count: vote_count,
         unique_voter_count: unique_voter_count,

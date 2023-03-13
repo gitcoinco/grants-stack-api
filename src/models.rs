@@ -205,6 +205,14 @@ pub struct ProjectSummary {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+pub struct RoundSummary {
+    pub round_id: String,
+    pub vote_count: i64,
+    pub unique_voter_count: i64,
+    pub vote_token_sum: Vec<TokenVote>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct ProjectResponseData {
     pub data: Option<ProjectItem>,
     pub project_meta_ptr: Option<ProjectMetaPtrItem>,
@@ -230,6 +238,7 @@ pub struct GetRoundDataQueryParams {
     pub projects_meta_ptr: Option<bool>,
     pub round_projects: Option<bool>,
     pub round_votes: Option<bool>,
+    pub round_summary: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -240,6 +249,7 @@ pub struct RoundResponseData {
     pub projects_meta_ptr: Option<RoundProjectsMetaPtrItem>,
     pub round_projects: Option<Vec<ProjectItem>>,
     pub round_votes: Option<Vec<QfVoteItem>>,
+    pub round_summary: Option<RoundSummary>,
 }
 
 #[derive(Deserialize)]

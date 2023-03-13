@@ -194,15 +194,15 @@ pub fn insert_projects(conn: &mut PgConnection, data: Vec<ProjectItem>) {
 
 pub fn new_projects(conn: &mut PgConnection, data: Vec<Project>) {
     let mut project_items: Vec<ProjectItem> = Vec::new();
-    for project2 in data {
+    for project in data {
         let project_item = ProjectItem {
-            id: project2.id,
-            payoutAddress: project2.payoutAddress,
-            projectId: project2.project,
-            createdAt: project2.createdAt,
-            updatedAt: project2.updatedAt,
-            chainId: project2.chainId.unwrap().to_string(),
-            roundId: project2.round.id,
+            id: project.id,
+            payoutAddress: project.payoutAddress,
+            projectId: project.project,
+            createdAt: project.createdAt,
+            updatedAt: project.updatedAt,
+            chainId: project.chainId.unwrap().to_string(),
+            roundId: project.round.id,
         };
 
         project_items.push(project_item);
@@ -263,7 +263,6 @@ pub fn new_qf_votes(conn: &mut PgConnection, data: Vec<QfVote>) {
     }
 
     insert_qf_votes(conn, qf_votes_data);
-
 }
 
 pub async fn get_round_meta_ptr(
