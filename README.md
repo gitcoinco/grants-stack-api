@@ -54,6 +54,7 @@ This endpoint fetches round data from the database. It accepts a query parameter
 - `projects_meta_ptr`: Include projects metadata pointer in the response.
 - `round_projects`: Include round projects data in the response.
 - `round_votes`: Include round votes data in the response.
+- `round_summary`: Include round summary data in the response. 
 
 #### `GET /project`
 
