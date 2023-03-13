@@ -12,9 +12,9 @@ async fn main() -> std::io::Result<()> {
             .service(get_ipfs_handler)
             .service(health_check_handler)
     })
-        .bind(("0.0.0.0", 8080))?
-        .run()
-        .await
+    .bind(("0.0.0.0", 8080))?
+    .run()
+    .await
 }
 
 // an endpoint to trigger seeding
@@ -42,6 +42,7 @@ async fn get_round_handler(query: web::Query<models::GetRoundDataQueryParams>) -
         projects_meta_ptr: None,
         round_projects: None,
         round_votes: None,
+        round_summary: None,
     };
 
     let pg = &mut utils::establish_pg_connection().unwrap();
@@ -98,6 +99,11 @@ async fn get_round_handler(query: web::Query<models::GetRoundDataQueryParams>) -
         if !round_votes.is_empty() {
             res_data.round_votes = Some(round_votes);
         }
+    }
+
+    if query.round_summary.unwrap_or(false) {
+        let round_summary = utils::summarize_round(pg, round_id.to_string()).await;
+        res_data.round_summary = Some(round_summary);
     }
 
     HttpResponse::Ok().json(res_data)
