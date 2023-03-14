@@ -17,7 +17,8 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
-// an endpoint to trigger seeding
+/// Triggers seeding of the whole database
+/// Takes a long time for chains with a lot of votes
 #[get("/seed/{chain_id}")]
 async fn seed_handler(chain_id: web::Path<u16>) -> impl Responder {
     let chain_id = chain_id.into_inner();
@@ -109,9 +110,9 @@ async fn get_round_handler(query: web::Query<models::GetRoundDataQueryParams>) -
     HttpResponse::Ok().json(res_data)
 }
 
-// an endpoint for getting project data
-// use ?project_id=0x01...&{data, project_meta_ptr, project_votes}=true/false
-// multiple params can be used at the same time
+/// an endpoint for getting project data
+/// use ?project_id=0x01...&{data, project_meta_ptr, project_votes}=true/false
+/// multiple params can be used at the same time
 #[get("/project")]
 async fn get_project_handler(
     query: web::Query<models::GetProjectDataQueryParams>,

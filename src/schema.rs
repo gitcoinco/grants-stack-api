@@ -1,6 +1,15 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    incremental_updates (id) {
+        id -> Int4,
+        last_processed_block -> Int8,
+        chain_id -> Int4,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     programs (id) {
         id -> Text,
         createdAt -> Text,
@@ -21,17 +30,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    project_meta_ptrs (id) {
-        id -> Text,
-        protocol -> Text,
-        pointer -> Text,
-        roundId -> Text,
-        projectId -> Text,
-        chainId -> Text,
-    }
-}
-
-diesel::table! {
     project_summaries (id) {
         id -> Int4,
         createdAt -> Text,
@@ -48,58 +46,20 @@ diesel::table! {
 diesel::table! {
     projects (id) {
         id -> Text,
+        status -> Text,
         payoutAddress -> Nullable<Text>,
-        projectId -> Text,
+        project -> Text,
         createdAt -> Text,
         updatedAt -> Text,
-        chainId -> Text,
-        roundId -> Text,
+        chainId -> Nullable<Text>,
     }
 }
 
 diesel::table! {
-    projects_meta_ptrs (id) {
-        id -> Text,
-        protocol -> Nullable<Text>,
+    projects_meta_ptrs (roundId) {
+        roundId -> Text,
         pointer -> Nullable<Text>,
-        createdAt -> Nullable<Text>,
-        updatedAt -> Nullable<Text>,
-        roundId -> Nullable<Text>,
-    }
-}
-
-diesel::table! {
-    qf_votes (id) {
-        id -> Text,
-        createdAt -> Text,
-        amount -> Text,
-        from -> Text,
-        to -> Text,
-        projectId -> Text,
-        token -> Text,
-        version -> Text,
-        chainId -> Text,
-        roundId -> Text,
-    }
-}
-
-diesel::table! {
-    round_meta_ptrs (id) {
-        id -> Text,
-        protocol -> Text,
-        pointer -> Text,
-        roundId -> Text,
-        chainId -> Text,
-    }
-}
-
-diesel::table! {
-    round_projects_meta_ptrs (id) {
-        id -> Text,
-        protocol -> Text,
-        pointer -> Text,
-        roundId -> Text,
-        chainId -> Text,
+        protocol -> Nullable<Text>,
     }
 }
 
@@ -119,26 +79,26 @@ diesel::table! {
 }
 
 diesel::table! {
-    voting_strategies (id) {
+    votes (id) {
         id -> Text,
-        strategyAddress -> Text,
-        strategyName -> Text,
+        createdAt -> Text,
+        amount -> Text,
+        from -> Text,
+        to -> Text,
+        token -> Text,
         version -> Text,
-        roundId -> Text,
-        chainId -> Text,
+        projectId -> Nullable<Text>,
+        chainId -> Nullable<Text>,
     }
 }
 
 diesel::allow_tables_to_appear_in_same_query!(
+    incremental_updates,
     programs,
     project_matches,
-    project_meta_ptrs,
     project_summaries,
     projects,
     projects_meta_ptrs,
-    qf_votes,
-    round_meta_ptrs,
-    round_projects_meta_ptrs,
     rounds,
-    voting_strategies,
+    votes,
 );
