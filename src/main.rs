@@ -1,4 +1,4 @@
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder, post};
 use grants_stack_api::{
     database,
     models::{
@@ -8,6 +8,8 @@ use grants_stack_api::{
     seed, utils,
 };
 use serde::{Deserialize, Serialize};
+use grants_stack_api::models::Round;
+
 #[derive(Clone, Deserialize, Debug)]
 struct GetRoundDataQueryParams {
     round_id: String,
@@ -28,6 +30,7 @@ struct RoundResponseData {
     round_projects: Option<Vec<ProjectItem>>,
     round_votes: Option<Vec<QfVoteItem>>,
 }
+
 #[derive(Clone, Deserialize)]
 struct GetProjectDataQueryParams {
     project_id: String,
@@ -58,9 +61,9 @@ async fn main() -> std::io::Result<()> {
             .service(get_project_handler)
             .service(get_ipfs_handler)
     })
-    .bind(("0.0.0.0", 8080))?
-    .run()
-    .await
+        .bind(("0.0.0.0", 8080))?
+        .run()
+        .await
 }
 
 // an endpoint to trigger seeding
@@ -205,4 +208,27 @@ async fn get_ipfs_handler(query: web::Query<GetIPFSQueryParams>) -> impl Respond
     } else {
         HttpResponse::Ok().body("No")
     }
+}
+
+/// Goes through all votes that don't have a corresponding token price,
+/// fetches the price for the given time of the vote
+/// and insert the price
+#[post("/backfill_votes")]
+async fn backfill_vote_prices() {
+    /* 1. Get currently running rounds */
+    use crate::schema::rounds::dsl::*;
+
+    let pg = &mut utils::establish_pg_connection().unwrap();
+
+    // get the current timestamp
+    let now = Local::now().naive_local();
+
+    // filter the rounds table
+    let rounds_in_progress = rounds::table.filter(
+        rounds::roundstarttime.le(now).and(rounds::roundendtime.gt(now))
+    ).load::<Round>(&conn).unwrap();
+
+    /* 2. For each round, get votes without an associated price */
+    /* 3. For each vote, fetch the price of the token at the time of the vote */
+    /* 4. Insert the price into the prices table */
 }
