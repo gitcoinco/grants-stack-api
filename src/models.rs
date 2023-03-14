@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::schema::{
     project_meta_ptrs, projects, qf_votes, round_meta_ptrs, round_projects_meta_ptrs, rounds,
-    voting_strategies,
+    token_prices, voting_strategies,
 };
 use ethers::types::U256;
 
@@ -43,7 +43,7 @@ pub struct RoundProjectsMetaPtrItem {
 #[diesel(table_name = rounds)]
 pub struct RoundItem {
     pub id: String,
-    pub payoutStrategy: String,
+    pub payoutStrategy: Option<String>,
     pub token: String,
     pub roundStartTime: String,
     pub roundEndTime: String,
@@ -120,7 +120,7 @@ pub struct QfVotesDerivedVotingStrategy {
 #[derive(Deserialize, Debug, Clone)]
 pub struct Round {
     pub id: String,
-    pub payoutStrategy: String,
+    pub payoutStrategy: Option<String>,
     pub roundEndTime: String,
     pub roundStartTime: String,
     pub token: String,
@@ -255,4 +255,24 @@ pub struct RoundResponseData {
 #[derive(Deserialize)]
 pub struct GetIPFSQueryParams {
     pub cid: Option<String>,
+}
+
+#[derive(Insertable, Queryable, Serialize, Deserialize, Debug, Clone)]
+#[diesel(table_name = token_prices)]
+pub struct TokenPriceItem {
+    pub timestamp: String,
+    pub token: String,
+    pub price: String,
+    pub chainId: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct TokenPrice {
+    pub timestamp: u64,
+    pub usd: f64,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct TokenPriceResponse {
+    pub prices: Vec<TokenPrice>,
 }

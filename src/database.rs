@@ -5,11 +5,11 @@ use diesel::ExpressionMethods;
 use crate::models::{
     DerivedRoundId, Project, ProjectItem, ProjectMetaPtr, ProjectMetaPtrItem, QfVote, QfVoteItem,
     Round, RoundItem, RoundMetaPtr, RoundMetaPtrItem, RoundProjectsMetaPtr,
-    RoundProjectsMetaPtrItem, VotingStrategy, VotingStrategyItem,
+    RoundProjectsMetaPtrItem, TokenPrice, TokenPriceItem, VotingStrategy, VotingStrategyItem,
 };
 use crate::schema::{
     project_meta_ptrs, projects, qf_votes, round_meta_ptrs, round_projects_meta_ptrs, rounds,
-    voting_strategies,
+    token_prices, voting_strategies,
 };
 
 pub fn insert_round_meta_ptrs(conn: &mut PgConnection, data: Vec<RoundMetaPtrItem>) {
@@ -150,7 +150,7 @@ pub fn new_rounds(conn: &mut PgConnection, data: Vec<Round>) {
     insert_rounds(conn, rounds_data);
 }
 
-pub fn insert_project_meta_ptrs1(conn: &mut PgConnection, data: Vec<ProjectMetaPtrItem>) {
+pub fn insert_project_meta_ptrs(conn: &mut PgConnection, data: Vec<ProjectMetaPtrItem>) {
     diesel::insert_into(project_meta_ptrs::table)
         .values(&data)
         .execute(conn)
@@ -178,11 +178,11 @@ pub fn new_project_meta_ptrs(conn: &mut PgConnection, data: Vec<ProjectMetaPtr>)
 
     while project_meta_ptrs_data.len() > chunk_size {
         let (chunk, rest) = project_meta_ptrs_data.split_at(chunk_size);
-        insert_project_meta_ptrs1(conn, chunk.to_vec());
+        insert_project_meta_ptrs(conn, chunk.to_vec());
         project_meta_ptrs_data = rest.to_vec()
     }
 
-    insert_project_meta_ptrs1(conn, project_meta_ptrs_data);
+    insert_project_meta_ptrs(conn, project_meta_ptrs_data);
 }
 
 pub fn insert_projects(conn: &mut PgConnection, data: Vec<ProjectItem>) {
@@ -263,6 +263,43 @@ pub fn new_qf_votes(conn: &mut PgConnection, data: Vec<QfVote>) {
     }
 
     insert_qf_votes(conn, qf_votes_data);
+}
+
+pub fn insert_token_price(conn: &mut PgConnection, data: Vec<TokenPriceItem>) {
+    diesel::insert_into(token_prices::table)
+        .values(&data)
+        .execute(conn)
+        .expect("Error saving new token price");
+}
+
+pub fn new_token_prices(
+    conn: &mut PgConnection,
+    data: Vec<TokenPrice>,
+    token: String,
+    chainId: String,
+) {
+    let mut token_prices: Vec<TokenPriceItem> = Vec::new();
+    for token_price in data {
+        let token_price_item = TokenPriceItem {
+            timestamp: token_price.timestamp.to_string(),
+            price: token_price.usd.to_string(),
+            token: token.clone(),
+            chainId: chainId.clone(),
+        };
+
+        token_prices.push(token_price_item);
+    }
+
+    let chunk_size = 1000;
+    let mut token_prices_data = token_prices;
+
+    while token_prices_data.len() > chunk_size {
+        let (chunk, rest) = token_prices_data.split_at(chunk_size);
+        insert_token_price(conn, chunk.to_vec());
+        token_prices_data = rest.to_vec()
+    }
+
+    insert_token_price(conn, token_prices_data);
 }
 
 pub async fn get_round_meta_ptr(

@@ -106,7 +106,7 @@ diesel::table! {
 diesel::table! {
     rounds (id) {
         id -> Text,
-        payoutStrategy -> Text,
+        payoutStrategy -> Nullable<Text>,
         token -> Text,
         roundStartTime -> Text,
         roundEndTime -> Text,
@@ -115,6 +115,15 @@ diesel::table! {
         createdAt -> Text,
         updatedAt -> Text,
         chainId -> Nullable<Text>,
+    }
+}
+
+diesel::table! {
+    token_prices (timestamp) {
+        timestamp -> Text,
+        token -> Text,
+        price -> Text,
+        chainId -> Text,
     }
 }
 
@@ -140,5 +149,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     round_meta_ptrs,
     round_projects_meta_ptrs,
     rounds,
+    token_prices,
     voting_strategies,
 );
