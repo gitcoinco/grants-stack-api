@@ -7,7 +7,7 @@ CREATE TABLE programs (
 );
 CREATE TABLE rounds (
     "id" TEXT NOT NULL,
-    "payoutStrategy" TEXT NOT NULL,
+    "payoutStrategy" TEXT,
     "token" TEXT NOT NULL,
     "roundStartTime" TEXT NOT NULL,
     "roundEndTime" TEXT NOT NULL,
@@ -57,10 +57,8 @@ CREATE TABLE projects_meta_ptrs (
     "createdAt" TEXT,
     "updatedAt" TEXT,
     "roundId" TEXT,
-
     CONSTRAINT "projects_meta_ptrs_pkey" PRIMARY KEY ("id")
 );
-
 CREATE TABLE voting_strategies (
     "id" TEXT NOT NULL,
     "strategyAddress" TEXT NOT NULL,
@@ -70,27 +68,22 @@ CREATE TABLE voting_strategies (
     "chainId" TEXT NOT NULL,
     CONSTRAINT "voting_strategies_pkey" PRIMARY KEY ("id")
 );
-
 CREATE TABLE round_meta_ptrs (
     "id" TEXT NOT NULL,
     "protocol" TEXT NOT NULL,
     "pointer" TEXT NOT NULL,
     "roundId" TEXT NOT NULL,
     "chainId" TEXT NOT NULL,
-
     CONSTRAINT "round_meta_ptrs_pkey" PRIMARY KEY ("id")
 );
-
 CREATE TABLE round_projects_meta_ptrs (
     "id" TEXT NOT NULL,
     "protocol" TEXT NOT NULL,
     "pointer" TEXT NOT NULL,
     "roundId" TEXT NOT NULL,
     "chainId" TEXT NOT NULL,
-
     CONSTRAINT "round_projects_meta_ptrs_pkey" PRIMARY KEY ("id")
 );
-
 CREATE TABLE project_meta_ptrs (
     "id" TEXT NOT NULL,
     "protocol" TEXT NOT NULL,
@@ -98,10 +91,8 @@ CREATE TABLE project_meta_ptrs (
     "roundId" TEXT NOT NULL,
     "projectId" TEXT NOT NULL,
     "chainId" TEXT NOT NULL,
-
     CONSTRAINT "project_meta_ptrs_pkey" PRIMARY KEY ("id")
-); 
-
+);
 CREATE TABLE qf_votes (
     "id" TEXT NOT NULL,
     "createdAt" TEXT NOT NULL,
@@ -113,6 +104,12 @@ CREATE TABLE qf_votes (
     "version" TEXT NOT NULL,
     "chainId" TEXT NOT NULL,
     "roundId" TEXT NOT NULL,
-
     CONSTRAINT "qf_votes_pkey" PRIMARY KEY ("id")
+);
+CREATE TABLE token_prices (
+    "timestamp" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "price" TEXT NOT NULL,
+    "chainId" TEXT NOT NULL,
+    CONSTRAINT "token_prices_pkey" PRIMARY KEY ("timestamp")
 )

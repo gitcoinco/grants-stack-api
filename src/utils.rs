@@ -4,14 +4,17 @@ use async_recursion::async_recursion;
 use diesel::{Connection, ConnectionResult, PgConnection};
 use ethers::types::U256;
 use gql_client::Client;
+use serde::Deserialize;
 
 use crate::{
     database,
     models::{
         self, Project, ProjectMetaPtr, ProjectSummary, QfVote, QfVotesDerivedQuery, Round,
         RoundMetaPtr, RoundProjectsDerivedQuery, RoundProjectsMetaPtr, RoundSummary,
-        RoundsDerivedQuery, TokenVote, VotingStrategy, VotingStrategyDerivedQuery,
+        RoundsDerivedQuery, TokenPrice, TokenPriceResponse, TokenVote, VotingStrategy,
+        VotingStrategyDerivedQuery,
     },
+    schema::token_prices,
 };
 
 pub const ETHEREUM_MAINNET: u16 = 1;
@@ -453,12 +456,22 @@ pub async fn summarize_round(conn: &mut PgConnection, round_id: String) -> model
     // count the number of unique vote from address
     // we use a hashmap here for future use cases where we want to count the number of votes for a specific address
     let mut address_vote_map: HashMap<String, i64> = HashMap::new();
-    for vote in round_votes {
+    for vote in round_votes.clone() {
         let address = vote.from;
         let current_count = address_vote_map.entry(address).or_insert(0);
         *current_count += 1;
     }
     let unique_voter_count = address_vote_map.len() as i64;
+
+    // let token_prices = query_token_prices_24hr(
+    //     "0x6b175474e89094c44da98b954eedeac495271d0f".to_string(),
+    //     1,
+    //     "1670634719".to_string(),
+    //     "1675209479".to_string(),
+    // )
+    // .await;
+
+    // println!("token_prices: {:?}", token_prices);
 
     let summary: RoundSummary = RoundSummary {
         round_id: round_id,
@@ -467,4 +480,30 @@ pub async fn summarize_round(conn: &mut PgConnection, round_id: String) -> model
         vote_token_sum: token_votes,
     };
     summary
+}
+
+pub async fn query_token_prices_24hr(
+    token_address: String,
+    chain_id: u16,
+    from: String,
+    to: String,
+) -> Vec<TokenPrice> {
+    if !check_chain_id(chain_id) {
+        panic!("Invalid chain id: {}", chain_id)
+    }
+
+    //curl -X 'GET' \ 'https://api.coingecko.com/api/v3/coins/ethereum/contract/0x6b175474e89094c44da98b954eedeac495271d0f/market_chart/range?vs_currency=usd&from=150000&to=5000000' \ -H 'accept: application/json'
+    let url = format!("https://api.coingecko.com/api/v3/coins/ethereum/contract/{}/market_chart/range?vs_currency=usd&from={}&to={}", token_address, from, to);
+
+    let client = reqwest::Client::new();
+
+    let res = client.get(&url).send().await.unwrap();
+
+    let token_price_res = res.json::<TokenPriceResponse>().await.unwrap();
+
+    token_price_res.prices
+
+    // let json: TokenPriceResponse = serde_json::from_str(&body).unwrap();
+
+    // print!("{:?}", json);
 }
